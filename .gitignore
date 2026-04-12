@@ -1,0 +1,25 @@
+# Generated output
+output/
+presentation.html
+presentation-presenter.html
+
+# Compiled exercise binaries
+exercises/bin/
+
+# Release bundles
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editors
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Claude internals
+.claude/

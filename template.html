@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dynamic Instrumentation with Frida</title>
+    <meta name="description" content="A hands-on workshop on dynamic instrumentation with Frida">
+    <meta name="author" content="FHLUG - FH Oberosterreich Linux User Group">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Reveal.js 5.x core CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+    <!-- Reveal.js theme: black (dark base) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+
+    <!-- Highlight.js: dark theme for code -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="highlight-theme">
+
+    <style>
+        /* ============================================================
+           CLEAN PROFESSIONAL THEME
+           ============================================================ */
+
+        :root {
+            --accent:          #60a5fa;
+            --accent-light:    #93c5fd;
+            --accent-bg:       rgba(96, 165, 250, 0.1);
+            --accent-border:   rgba(96, 165, 250, 0.25);
+            --bg:              #0f172a;
+            --bg-slide:        #0f172a;
+            --bg-code:         #1e293b;
+            --bg-table-header: #1e293b;
+            --bg-table-stripe: #162032;
+            --text:            #e2e8f0;
+            --text-secondary:  #94a3b8;
+            --text-light:      #64748b;
+            --border:          #334155;
+            --border-light:    #1e293b;
+            --code-text:       #e2e8f0;
+            --heading:         #f1f5f9;
+            --red:             #f87171;
+            --green:           #4ade80;
+            --orange:          #fb923c;
+        }
+
+        /* ---- Clean background ---- */
+        .reveal-viewport {
+            background: var(--bg);
+        }
+
+        /* ---- Base typography ---- */
+        .reveal {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 30px;
+            color: var(--text);
+            font-weight: 400;
+        }
+
+        .reveal .slides section {
+            text-align: left;
+            padding: 30px 50px;
+        }
+
+        /* ---- Headings ---- */
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+            font-family: 'Inter', sans-serif;
+            color: var(--heading);
+            text-transform: none;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            margin-bottom: 0.6em;
+            text-shadow: none;
+        }
+
+        .reveal h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            text-align: center;
+            color: var(--heading);
+        }
+
+        .reveal h2 {
+            font-size: 1.35em;
+            font-weight: 600;
+            color: var(--accent);
+            padding-bottom: 0.35em;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .reveal h3 {
+            font-size: 1.0em;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .reveal h4, .reveal h5 {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        /* ---- Title / module title slides ---- */
+        .reveal .slides section:first-child,
+        .reveal .slides section.title-slide,
+        .reveal .slides section.module-title {
+            text-align: center;
+            display: flex !important;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .reveal .slides section:first-child h1,
+        .reveal .slides section.title-slide h1,
+        .reveal .slides section.module-title h1 {
+            font-size: 2.4em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.3em;
+        }
+
+        .reveal .slides section:first-child h2,
+        .reveal .slides section.title-slide h2,
+        .reveal .slides section.module-title h2 {
+            color: var(--text-secondary);
+            border-bottom: none;
+            font-size: 1.1em;
+            font-weight: 400;
+        }
+
+        .reveal .slides section:first-child p,
+        .reveal .slides section.title-slide p,
+        .reveal .slides section.module-title p {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* ---- Paragraphs ---- */
+        .reveal p {
+            line-height: 1.65;
+            margin-bottom: 0.65em;
+            color: var(--text);
+        }
+
+        .reveal strong, .reveal b {
+            font-weight: 600;
+            color: var(--heading);
+        }
+
+        .reveal em, .reveal i {
+            color: var(--text-secondary);
+        }
+
+        /* ---- Links ---- */
+        .reveal a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid var(--accent-border);
+            transition: border-color 0.2s;
+        }
+
+        .reveal a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ---- Lists ---- */
+        .reveal ul, .reveal ol {
+            margin-left: 0.6em;
+            margin-bottom: 0.5em;
+        }
+
+        .reveal li {
+            margin-bottom: 0.3em;
+            line-height: 1.55;
+            color: var(--text);
+        }
+
+        .reveal ul li::marker {
+            color: var(--accent);
+        }
+
+        .reveal ol li::marker {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .reveal li > ul, .reveal li > ol {
+            margin-top: 0.2em;
+        }
+
+        /* ---- Code: inline ---- */
+        .reveal code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85em;
+        }
+
+        .reveal :not(pre) > code {
+            background: rgba(96, 165, 250, 0.15);
+            color: #93c5fd;
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.85em;
+        }
+
+        /* ---- Code: blocks ---- */
+        .reveal pre {
+            width: 100%;
+            margin: 0.7em 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-code);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .reveal pre code {
+            font-size: 0.62em;
+            line-height: 1.5;
+            padding: 1em 1.2em;
+            max-height: 480px;
+            border-radius: 8px;
+            background: var(--bg-code);
+            color: var(--code-text);
+        }
+
+        /* Language badge */
+        .reveal pre[data-lang]::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.45em;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: var(--bg);
+            padding: 1px 6px;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+        }
+
+        /* ---- Tables ---- */
+        .reveal table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.7em 0;
+            font-size: 0.75em;
+        }
+
+        .reveal table th {
+            background: var(--bg-table-header);
+            color: var(--heading);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.6em 0.8em;
+            border-bottom: 2px solid var(--border);
+            font-size: 0.92em;
+        }
+
+        .reveal table td {
+            padding: 0.5em 0.8em;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text);
+        }
+
+        .reveal table tr:nth-child(even) {
+            background: var(--bg-table-stripe);
+        }
+
+        /* ---- Blockquotes ---- */
+        .reveal blockquote {
+            background: var(--accent-bg);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            padding: 0.7em 1.1em;
+            margin: 0.7em 0;
+            font-style: normal;
+            box-shadow: none;
+        }
+
+        .reveal blockquote p {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin: 0;
+        }
+
+        /* ---- Horizontal rules ---- */
+        .reveal hr {
+            border: none;
+            height: 1px;
+            background: var(--border);
+            margin: 1.2em 0;
+        }
+
+        /* ---- Images ---- */
+        .reveal img {
+            max-height: 420px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ---- Slide numbers ---- */
+        .reveal .slide-number {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-light);
+            background: none;
+            right: 20px;
+            bottom: 14px;
+        }
+
+        /* ---- Progress bar ---- */
+        .reveal .progress {
+            height: 3px;
+            color: var(--accent);
+        }
+
+        .reveal .progress span {
+            background: var(--accent);
+        }
+
+        /* ---- Controls ---- */
+        .reveal .controls {
+            color: var(--accent);
+        }
+
+        .reveal .controls button {
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+
+        .reveal .controls button:hover {
+            opacity: 0.8;
+        }
+
+        /* ---- Overview mode ---- */
+        .reveal.overview .slides section {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .reveal.overview .slides section:hover {
+            border-color: var(--accent);
+        }
+
+        /* ---- Footer ---- */
+        #presentation-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-light);
+            opacity: 0.5;
+            z-index: 100;
+            pointer-events: none;
+            letter-spacing: 0.01em;
+        }
+
+        #presentation-footer .separator {
+            color: var(--border);
+            margin: 0 0.8em;
+        }
+
+        /* ---- Selection ---- */
+        .reveal ::selection {
+            background: rgba(96, 165, 250, 0.3);
+            color: #ffffff;
+        }
+
+        /* ---- ASCII art / diagrams (no language) ---- */
+        .reveal pre code.nohighlight,
+        .reveal pre code:not([class*="language-"]):not([class*="hljs"]) {
+            color: var(--text);
+            background: var(--bg-code);
+        }
+
+        /* ---- Print / PDF ---- */
+        @media print {
+            #presentation-footer { display: none; }
+            .reveal pre code { max-height: none; }
+            .reveal-viewport { background: #0f172a; }
+        }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            .reveal { font-size: 22px; }
+            .reveal pre code { font-size: 0.48em; }
+            .reveal h1 { font-size: 1.8em; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="reveal">
+        <div class="slides">
+{{SLIDES_CONTENT}}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="presentation-footer">
+        Dynamic Instrumentation with Frida
+        <span class="separator">&middot;</span>
+        FHLUG
+    </div>
+
+    <!-- Reveal.js 5.x -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+
+    <!-- Plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/markdown/markdown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/search/search.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/zoom/zoom.js"></script>
+
+    <script>
+        Reveal.initialize({
+            // Display
+            width: 1280,
+            height: 720,
+            margin: 0.08,
+            center: true,
+
+            // Navigation
+            hash: true,
+            history: true,
+            keyboard: true,
+            overview: true,
+            touch: true,
+            loop: false,
+
+            // Appearance
+            transition: 'slide',
+            transitionSpeed: 'default',
+            backgroundTransition: 'fade',
+            progress: true,
+            slideNumber: true,
+            showNotes: false,
+
+            // Plugins
+            plugins: [
+                RevealMarkdown,
+                RevealHighlight,
+                RevealNotes,
+                RevealSearch,
+                RevealZoom
+            ]
+        });
+
+        // Hide footer on title slide
+        Reveal.on('slidechanged', event => {
+            const footer = document.getElementById('presentation-footer');
+            footer.style.opacity = (event.indexh === 0 && event.indexv === 0) ? '0' : '0.5';
+        });
+    </script>
+</body>
+</html>
