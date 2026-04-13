@@ -1,0 +1,4386 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dynamic Instrumentation with Frida</title>
+    <meta name="description" content="A hands-on workshop on dynamic instrumentation with Frida">
+    <meta name="author" content="FHLUG - FH Oberosterreich Linux User Group">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Reveal.js 5.x core CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+    <!-- Reveal.js theme: black (dark base) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+
+    <!-- Highlight.js: dark theme for code -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="highlight-theme">
+
+    <style>
+        /* ============================================================
+           CLEAN PROFESSIONAL THEME
+           ============================================================ */
+
+        :root {
+            --accent:          #60a5fa;
+            --accent-light:    #93c5fd;
+            --accent-bg:       rgba(96, 165, 250, 0.1);
+            --accent-border:   rgba(96, 165, 250, 0.25);
+            --bg:              #0f172a;
+            --bg-slide:        #0f172a;
+            --bg-code:         #1e293b;
+            --bg-table-header: #1e293b;
+            --bg-table-stripe: #162032;
+            --text:            #e2e8f0;
+            --text-secondary:  #94a3b8;
+            --text-light:      #64748b;
+            --border:          #334155;
+            --border-light:    #1e293b;
+            --code-text:       #e2e8f0;
+            --heading:         #f1f5f9;
+            --red:             #f87171;
+            --green:           #4ade80;
+            --orange:          #fb923c;
+        }
+
+        /* ---- Clean background ---- */
+        .reveal-viewport {
+            background: var(--bg);
+        }
+
+        /* ---- Base typography ---- */
+        .reveal {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 30px;
+            color: var(--text);
+            font-weight: 400;
+        }
+
+        .reveal .slides section {
+            text-align: left;
+            padding: 30px 50px;
+        }
+
+        /* ---- Headings ---- */
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+            font-family: 'Inter', sans-serif;
+            color: var(--heading);
+            text-transform: none;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            margin-bottom: 0.6em;
+            text-shadow: none;
+        }
+
+        .reveal h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            text-align: center;
+            color: var(--heading);
+        }
+
+        .reveal h2 {
+            font-size: 1.35em;
+            font-weight: 600;
+            color: var(--accent);
+            padding-bottom: 0.35em;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .reveal h3 {
+            font-size: 1.0em;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .reveal h4, .reveal h5 {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        /* ---- Title / module title slides ---- */
+        .reveal .slides section:first-child,
+        .reveal .slides section.title-slide,
+        .reveal .slides section.module-title {
+            text-align: center;
+            display: flex !important;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .reveal .slides section:first-child h1,
+        .reveal .slides section.title-slide h1,
+        .reveal .slides section.module-title h1 {
+            font-size: 2.4em;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.3em;
+        }
+
+        .reveal .slides section:first-child h2,
+        .reveal .slides section.title-slide h2,
+        .reveal .slides section.module-title h2 {
+            color: var(--text-secondary);
+            border-bottom: none;
+            font-size: 1.1em;
+            font-weight: 400;
+        }
+
+        .reveal .slides section:first-child p,
+        .reveal .slides section.title-slide p,
+        .reveal .slides section.module-title p {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        /* ---- Paragraphs ---- */
+        .reveal p {
+            line-height: 1.65;
+            margin-bottom: 0.65em;
+            color: var(--text);
+        }
+
+        .reveal strong, .reveal b {
+            font-weight: 600;
+            color: var(--heading);
+        }
+
+        .reveal em, .reveal i {
+            color: var(--text-secondary);
+        }
+
+        /* ---- Links ---- */
+        .reveal a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid var(--accent-border);
+            transition: border-color 0.2s;
+        }
+
+        .reveal a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        /* ---- Lists ---- */
+        .reveal ul, .reveal ol {
+            margin-left: 0.6em;
+            margin-bottom: 0.5em;
+        }
+
+        .reveal li {
+            margin-bottom: 0.3em;
+            line-height: 1.55;
+            color: var(--text);
+        }
+
+        .reveal ul li::marker {
+            color: var(--accent);
+        }
+
+        .reveal ol li::marker {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .reveal li > ul, .reveal li > ol {
+            margin-top: 0.2em;
+        }
+
+        /* ---- Code: inline ---- */
+        .reveal code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85em;
+        }
+
+        .reveal :not(pre) > code {
+            background: rgba(96, 165, 250, 0.15);
+            color: #93c5fd;
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.85em;
+        }
+
+        /* ---- Code: blocks ---- */
+        .reveal pre {
+            width: 100%;
+            margin: 0.7em 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-code);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .reveal pre code {
+            font-size: 0.62em;
+            line-height: 1.5;
+            padding: 1em 1.2em;
+            max-height: 480px;
+            border-radius: 8px;
+            background: var(--bg-code);
+            color: var(--code-text);
+        }
+
+        /* Language badge */
+        .reveal pre[data-lang]::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.45em;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: var(--bg);
+            padding: 1px 6px;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+        }
+
+        /* ---- Tables ---- */
+        .reveal table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.7em 0;
+            font-size: 0.75em;
+        }
+
+        .reveal table th {
+            background: var(--bg-table-header);
+            color: var(--heading);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.6em 0.8em;
+            border-bottom: 2px solid var(--border);
+            font-size: 0.92em;
+        }
+
+        .reveal table td {
+            padding: 0.5em 0.8em;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text);
+        }
+
+        .reveal table tr:nth-child(even) {
+            background: var(--bg-table-stripe);
+        }
+
+        /* ---- Blockquotes ---- */
+        .reveal blockquote {
+            background: var(--accent-bg);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            padding: 0.7em 1.1em;
+            margin: 0.7em 0;
+            font-style: normal;
+            box-shadow: none;
+        }
+
+        .reveal blockquote p {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin: 0;
+        }
+
+        /* ---- Horizontal rules ---- */
+        .reveal hr {
+            border: none;
+            height: 1px;
+            background: var(--border);
+            margin: 1.2em 0;
+        }
+
+        /* ---- Images ---- */
+        .reveal img {
+            max-height: 420px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ---- Slide numbers ---- */
+        .reveal .slide-number {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-light);
+            background: none;
+            right: 20px;
+            bottom: 14px;
+        }
+
+        /* ---- Progress bar ---- */
+        .reveal .progress {
+            height: 3px;
+            color: var(--accent);
+        }
+
+        .reveal .progress span {
+            background: var(--accent);
+        }
+
+        /* ---- Controls ---- */
+        .reveal .controls {
+            color: var(--accent);
+        }
+
+        .reveal .controls button {
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+
+        .reveal .controls button:hover {
+            opacity: 0.8;
+        }
+
+        /* ---- Overview mode ---- */
+        .reveal.overview .slides section {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .reveal.overview .slides section:hover {
+            border-color: var(--accent);
+        }
+
+        /* ---- Footer ---- */
+        #presentation-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-light);
+            opacity: 0.5;
+            z-index: 100;
+            pointer-events: none;
+            letter-spacing: 0.01em;
+        }
+
+        #presentation-footer .separator {
+            color: var(--border);
+            margin: 0 0.8em;
+        }
+
+        /* ---- Selection ---- */
+        .reveal ::selection {
+            background: rgba(96, 165, 250, 0.3);
+            color: #ffffff;
+        }
+
+        /* ---- ASCII art / diagrams (no language) ---- */
+        .reveal pre code.nohighlight,
+        .reveal pre code:not([class*="language-"]):not([class*="hljs"]) {
+            color: var(--text);
+            background: var(--bg-code);
+        }
+
+        /* ---- Print / PDF ---- */
+        @media print {
+            #presentation-footer { display: none; }
+            .reveal pre code { max-height: none; }
+            .reveal-viewport { background: #0f172a; }
+        }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            .reveal { font-size: 22px; }
+            .reveal pre code { font-size: 0.48em; }
+            .reveal h1 { font-size: 1.8em; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="reveal">
+        <div class="slides">
+            <section class="module-title" data-module="00-intro">
+                <h1>Dynamic Instrumentation with Frida</h1>
+<h2>A Hands-On Workshop</h2>
+<p><strong>FHLUG - FH Oberosterreich Linux User Group</strong></p>
+            </section>
+
+            <section data-module="00-intro">
+                <h2>Get the Code</h2>
+<p><img src="assets/repo-qr.png" alt="Repo QR code"></p>
+<p><strong>github.com/f0rw4rd/frida-workshop</strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>git clone https://github.com/f0rw4rd/frida-workshop.git
+cd frida-workshop &amp;&amp; ./setup.sh</code></pre>
+<p>Clone now so the setup can run in the background while we start.</p>
+            </section>
+
+            <section data-module="00-intro">
+                <h2>About This Workshop</h2>
+<ul><li><strong>Duration:</strong> ~2 hours, hands-on</li><li><strong>Platform:</strong> Linux x86 / x86_64</li><li><strong>Format:</strong> Short theory blocks followed by practical exercises</li><li><strong>Goal:</strong> Walk out able to use Frida to hook and modify running programs</li></ul>
+<blockquote><p>Bring your laptop, follow along, break things.</p></blockquote>
+            </section>
+
+            <section data-module="00-intro">
+                <h2>About Me</h2>
+<p><strong>Felix Eberstaller</strong> - OT Pentester & Security Researcher</p>
+<ul><li>FH OOe Hagenberg alumni - Sichere Informationssysteme (Secure Information Systems)</li><li>30+ CVEs in ICS/SCADA systems (Siemens, Valmet, Schneider, KNX, Checkmk)</li><li>Speaker at Black Hat USA 2025, S4x22, IKT Sicherheitskonferenz</li><li>Contributor to OWASP OT Top 10, Nmap ICS scripts</li><li>Tools: tls-preloader (94 stars), sthenos-embedded-toolkit, knxunlocker</li></ul>
+<p><strong>Blog:</strong> https://f0rw4rd.github.io | <strong>GitHub:</strong> github.com/f0rw4rd | <strong>X:</strong> @f0rw4rd_at</p>
+            </section>
+
+            <section data-module="00-intro">
+                <h2>What You'll Learn</h2>
+<ol><li><strong>Reverse engineering fundamentals</strong> -what it is, why it matters</li><li><strong>Static vs dynamic analysis</strong> -when to reach for each</li><li><strong>Linux tracing tools</strong> -<code>strace</code>, <code>ltrace</code>, and friends</li><li><strong>Frida</strong> -the Swiss Army knife of dynamic instrumentation</li><li><strong>Frida scripting</strong> -writing JavaScript hooks to intercept and modify behavior</li></ol>
+            </section>
+
+            <section data-module="00-intro">
+                <h2>Prerequisites</h2>
+<ul><li>Comfortable with the <strong>Linux command line</strong> (bash, pipes, basic navigation)</li><li><strong>Basic C knowledge</strong> -you can read a simple C program</li><li>A laptop running <strong>Linux</strong> (native, VM, or WSL2)</li><li>Python 3 and pip installed</li><li>A terminal you enjoy working in</li></ul>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Quick check -you should be able to run:
+gcc --version
+python3 --version
+pip3 --version</code></pre>
+            </section>
+
+            <section data-module="00-intro">
+                <h2>Quick Poll</h2>
+<p>Raise your hand if you have used:</p>
+<ul><li><strong>gdb</strong> -the GNU debugger?</li><li><strong>strace</strong> -system call tracer?</li><li><strong>ltrace</strong> -library call tracer?</li><li><strong>objdump / readelf</strong> -ELF inspection tools?</li><li><strong>Ghidra</strong> -NSA's reverse engineering suite?</li><li><strong>Frida</strong> -dynamic instrumentation toolkit?</li><li><strong>radare2 / Binary Ninja / IDA</strong> -other RE tools?</li></ul>
+<blockquote><p>No wrong answers. We start from the ground up.</p></blockquote>
+            </section>
+
+            <section data-module="00-intro">
+                <h2>Setup Check</h2>
+<p>Make sure you can run these before we dive in:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Compiler and tools
+gcc --version
+readelf --version
+objdump --version
+strace --version
+ltrace --version
+
+# Python + Frida (we&#x27;ll install Frida together later)
+python3 -c &quot;print(&#x27;Python OK&#x27;)&quot;
+pip3 --version</code></pre>
+<p>If anything is missing:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Debian/Ubuntu
+sudo apt install build-essential binutils strace ltrace python3-pip
+
+# Arch/Manjaro
+sudo pacman -S base-devel binutils strace ltrace python-pip
+
+# Fedora
+sudo dnf install gcc binutils strace ltrace python3-pip</code></pre>
+            </section>
+
+            <section data-module="00-intro">
+                <h2>Let's Get Started</h2>
+<blockquote><p>"You can't trust code that you did not totally create yourself."</p><p>- Ken Thompson, "Reflections on Trusting Trust" (1984 Turing Award Lecture)</p></blockquote>
+<p>Next up: <strong>Reverse Engineering Basics</strong></p>
+            </section>
+
+            <section class="module-title" data-module="01-re-basics">
+                <h1>Reverse Engineering Basics</h1>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>What Is Reverse Engineering?</h2>
+<p><strong>Understanding software without access to source code.</strong></p>
+<p>You have a compiled binary. You want to know:</p>
+<ul><li>What does it do?</li><li>How does it do it?</li><li>Can it be made to do something else?</li></ul>
+<pre><code class="nohighlight" data-trim data-noescape>Source Code  --[compiler]--&gt;  Binary  --[reverse engineer]--&gt;  Understanding
+     ^                                                              |
+     |______________________________________________________________|
+                        (reconstruct knowledge)</code></pre>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>Why Reverse Engineer?</h2>
+<ul><li><strong>Security auditing</strong> -find vulnerabilities in closed-source software</li><li><strong>Malware analysis</strong> -understand what a suspicious binary actually does</li><li><strong>Interoperability</strong> -make software work together (drivers, protocols, file formats)</li><li><strong>CTF competitions</strong> -capture the flag challenges in security contests</li><li><strong>Legacy code</strong> -understand undocumented systems nobody remembers writing</li><li><strong>Learning</strong> -deeply understand how compilers, OSes, and software work</li></ul>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>Legal Considerations</h2>
+<p>Reverse engineering is legal in the EU under specific conditions:</p>
+<ul><li><strong>EU Directive 2009/24/EC</strong> - RE allowed for interoperability with other software</li><li><strong>2021 CJEU ruling</strong> - expanded to allow decompilation for bug fixing</li><li><strong>Austrian UrhG (Copyright Act)</strong> - §§ 40c-40e implement the EU directive; decompilation for interoperability is permitted</li><li><strong>EULAs</strong> - some prohibit RE, but EU law overrides contractual restrictions for interoperability</li><li><strong>US (DMCA)</strong> - similar exemptions exist for security research (for international context)</li></ul>
+<p><strong>For this workshop:</strong></p>
+<ul><li>We only analyze our own binaries and open-source software</li><li>Interoperability and security research are protected under EU law</li><li>For professional engagements, get legal advice specific to your jurisdiction</li></ul>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>The RE Workflow</h2>
+<pre><code class="nohighlight" data-trim data-noescape> +------------------+     +------------------+     +------------------+
+ |  Reconnaissance  | --&gt; | Static Analysis  | --&gt; | Dynamic Analysis |
+ |                  |     |                  |     |                  |
+ | file, strings,   |     | objdump, readelf |     | strace, ltrace,  |
+ | checksums, size  |     | Ghidra, nm       |     | gdb, Frida       |
+ +------------------+     +------------------+     +------------------+
+                                                           |
+                                                           v
+                                                   +------------------+
+                                                   | Documentation    |
+                                                   |                  |
+                                                   | notes, diagrams, |
+                                                   | scripts, reports |
+                                                   +------------------+</code></pre>
+<p>Each phase feeds back into the others. RE is iterative, not linear.</p>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>Binary Formats: ELF on Linux</h2>
+<p><strong>ELF</strong> = Executable and Linkable Format -the standard binary format on Linux.</p>
+<pre><code class="nohighlight" data-trim data-noescape>+-------------------+
+| ELF Header        |  &lt;-- Magic bytes, arch, entry point
++-------------------+
+| Program Headers   |  &lt;-- How to load into memory (segments)
++-------------------+
+| .text             |  &lt;-- Executable code
+| .rodata           |  &lt;-- Read-only data (strings, constants)
+| .data             |  &lt;-- Initialized global variables
+| .bss              |  &lt;-- Uninitialized global variables
+| .plt              |  &lt;-- Function call stubs (how your program calls library functions)
+| .got              |  &lt;-- Address table filled at runtime (where libc function addresses live)
+| .symtab           |  &lt;-- Symbol table
+| .strtab           |  &lt;-- String table
+| ...               |
++-------------------+
+| Section Headers   |  &lt;-- Metadata about sections
++-------------------+</code></pre>
+<p>PLT/GOT are how your binary calls functions like <code>printf</code> or <code>strcmp</code> from libc. Understanding them helps you find the right place to hook - but Frida itself uses <strong>inline hooking</strong> (rewriting the function prologue), not GOT patching.</p>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>ELF: Sections vs Segments</h2>
+<p><strong>Sections</strong> -the linker's view (used at build time):</p>
+<ul><li><code>.text</code> -code, <code>.data</code> -data, <code>.rodata</code> -constants</li></ul>
+<p><strong>Segments</strong> -the loader's view (used at run time):</p>
+<ul><li><code>LOAD</code> segments map sections into memory with permissions (R/W/X)</li></ul>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># View sections
+readelf -S ./binary
+
+# View segments (program headers)
+readelf -l ./binary</code></pre>
+<p>A stripped binary can have segments removed of section headers, but segments must remain for the program to load.</p>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>Quick Demo: Reconnaissance Tools</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># What kind of file is this?
+$ file /usr/bin/ls
+/usr/bin/ls: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV),
+dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2,
+BuildID[sha1]=..., for GNU/Linux 4.4.0, stripped
+
+# ELF header details
+$ readelf -h /usr/bin/ls
+ELF Header:
+  Magic:   7f 45 4c 46 02 01 01 00 ...
+  Class:                             ELF64
+  Type:                              DYN (Position-Independent Executable)
+  Entry point address:               0x6b10
+  ...
+
+# Interesting strings
+$ strings /usr/bin/ls | head -20
+/lib64/ld-linux-x86-64.so.2
+libc.so.6
+fflush
+__printf_chk
+...</code></pre>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>Key Concepts: Symbols and Linking</h2>
+<p><strong>Symbols</strong> -named addresses in a binary (functions, variables):</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ nm ./my_program
+0000000000401156 T main          # T = text section (code), defined here
+0000000000404030 D global_var    # D = data section, defined here
+                 U printf        # U = undefined, imported from libc
+                 U malloc        # U = undefined, imported from libc</code></pre>
+<p><strong>Dynamic linking</strong> -resolving symbols at load time or first call:</p>
+<pre><code class="nohighlight" data-trim data-noescape>Your binary           libc.so
++-----------+         +-----------+
+| main()    |         | printf()  |  &lt;-- actual implementation
+| calls     |--------&gt;| malloc()  |
+| printf()  |  GOT/   | free()    |
++-----------+  PLT    +-----------+</code></pre>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>GOT and PLT: How Dynamic Calls Work</h2>
+<pre><code class="nohighlight" data-trim data-noescape>Code calls printf()
+        |
+        v
++-------+-------+
+|  PLT stub      |  .plt -small trampoline code
+|  jmp *GOT[n]   |-------&gt; GOT entry (initially points back to PLT)
++----------------+                |
+                           (first call: dynamic linker resolves)
+                           (subsequent calls: direct jump to printf)
+                                  |
+                                  v
+                          +-------+-------+
+                          |  libc printf  |  actual function
+                          +---------------+</code></pre>
+<p><strong>Why this matters for Frida:</strong> PLT/GOT explain <em>how</em> dynamic calls reach libc, but Frida does <strong>not</strong> patch the GOT. It resolves the target function (e.g. <code>strcmp</code> in libc) and hooks it <strong>inline</strong> by rewriting the function's prologue with a trampoline - so every caller is intercepted, not just ones going through this binary's GOT.</p>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>Calling Conventions: Why They (Barely) Matter</h2>
+<p>C functions pass arguments via registers or the stack. The rules vary by architecture:</p>
+<table>
+<thead><tr>
+<th>Architecture</th>
+<th>First args</th>
+<th>How</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>x86 (32-bit)</td>
+<td>Stack</td>
+<td>Pushed right to left</td>
+</tr>
+<tr>
+<td>x86_64 (64-bit)</td>
+<td><code>rdi</code>, <code>rsi</code>, <code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code></td>
+<td>Registers first, then stack</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The good news: Frida handles this for you.</strong></p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;open&quot;), {
+    onEnter(args) {
+        // args[0] is always the first argument, regardless of architecture
+        console.log(&quot;open:&quot;, args[0].readUtf8String());
+    }
+});</code></pre>
+<p>You only need to know calling conventions when reading raw assembly in objdump/Ghidra.</p>
+            </section>
+
+            <section data-module="01-re-basics">
+                <h2>Summary</h2>
+<ul><li>RE = understanding binaries without source code</li><li>The workflow: <strong>recon &rarr; static &rarr; dynamic &rarr; document</strong></li><li>ELF is the binary format on Linux -know its structure</li><li>Symbols, GOT, and PLT are how dynamic linking works</li><li>Calling conventions tell you where function arguments live</li><li>All of this builds the foundation for using Frida effectively</li></ul>
+<p><strong>Next up: Static Analysis Tools</strong></p>
+            </section>
+
+            <section class="module-title" data-module="02-static-analysis">
+                <h1>Static Analysis</h1>
+<h2>Examining Binaries Without Running Them</h2>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>What Is Static Analysis?</h2>
+<p>Analyzing a binary <strong>without executing it</strong>.</p>
+<p>You look at the file on disk -its structure, code, data, and metadata.</p>
+<p><strong>Advantages:</strong></p>
+<ul><li>Safe -the binary never runs, so it cannot cause harm</li><li>Complete -you can see all code paths, not just executed ones</li><li>Reproducible -same binary, same results every time</li></ul>
+<p><strong>Disadvantages:</strong></p>
+<ul><li>Cannot see runtime behavior (heap contents, network traffic, user input)</li><li>Obfuscation and packing defeat many static techniques</li><li>Can be overwhelming -large binaries have millions of instructions</li></ul>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>Tool Overview</h2>
+<table>
+<thead><tr>
+<th>Tool</th>
+<th>Purpose</th>
+<th>Depth</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>file</code></td>
+<td>Identify file type and architecture</td>
+<td>Surface</td>
+</tr>
+<tr>
+<td><code>strings</code></td>
+<td>Extract readable text</td>
+<td>Surface</td>
+</tr>
+<tr>
+<td><code>readelf</code></td>
+<td>Examine ELF structure in detail</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><code>nm</code></td>
+<td>List symbols (functions, variables)</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><code>objdump</code></td>
+<td>Disassemble code sections</td>
+<td>Deep</td>
+</tr>
+<tr>
+<td><strong>Ghidra</strong></td>
+<td>Full decompilation to pseudo-C</td>
+<td>Deep</td>
+</tr>
+</tbody>
+</table>
+<p>We will use all of these except Ghidra in hands-on exercises.</p>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2><code>file</code> - What Am I Looking At?</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ file /usr/bin/ls
+/usr/bin/ls: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV),
+dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2,
+BuildID[sha1]=897f49..., for GNU/Linux 4.4.0, stripped
+
+$ file /usr/lib/libc.so.6
+/usr/lib/libc.so.6: ELF 64-bit LSB shared object, x86-64, version 1 (GNU),
+dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2,
+BuildID[sha1]=abc123..., for GNU/Linux 4.4.0, not stripped
+
+$ file mystery_file
+mystery_file: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV),
+statically linked, stripped</code></pre>
+<p><strong>Key things to spot:</strong></p>
+<ul><li><strong>32-bit vs 64-bit</strong> -affects calling conventions and Frida usage</li><li><strong>dynamically vs statically linked</strong> -dynamic = more hookable with Frida</li><li><strong>stripped vs not stripped</strong> -stripped = no symbol names (harder to RE)</li><li><strong>pie executable</strong> -position-independent, addresses randomized at runtime</li></ul>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2><code>strings</code> - Finding Readable Text</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Basic usage -default minimum length is 4 characters
+$ strings ./target_binary
+
+# Minimum length of 8 characters (reduce noise)
+$ strings -n 8 ./target_binary
+
+# Show the offset of each string in the file
+$ strings -t x ./target_binary
+
+# Only search the data sections (not code)
+$ strings -d ./target_binary</code></pre>
+<p><strong>What to look for:</strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strings ./crackme | grep -i -E &quot;pass|key|flag|secret|correct|wrong|access&quot;
+Enter the password:
+Wrong password!
+Access granted!
+s3cret_k3y_2024
+FLAG{you_found_it}</code></pre>
+<p>Sometimes the answer is right there in the strings.</p>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2><code>strings</code> - Real-World Example</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strings /usr/bin/curl | head -30
+/lib64/ld-linux-x86-64.so.2
+libcurl.so.4
+curl_easy_init
+curl_easy_setopt
+curl_easy_perform
+curl_easy_cleanup
+curl_slist_append
+...
+Usage: curl [options...] &lt;url&gt;
+ -d, --data &lt;data&gt;          HTTP POST data
+ -H, --header &lt;header/@file&gt; Pass custom header(s)
+ -o, --output &lt;file&gt;        Write to file instead of stdout
+...</code></pre>
+<p>Strings reveal:</p>
+<ul><li><strong>Library dependencies</strong> (libcurl.so.4)</li><li><strong>Function imports</strong> (curl_easy_init, curl_easy_setopt)</li><li><strong>Usage text and error messages</strong></li><li><strong>Embedded paths, URLs, format strings</strong></li></ul>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2><code>readelf</code> - Examining ELF Structure</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># ELF header -architecture, entry point, type
+$ readelf -h ./binary
+
+# Section headers -all sections in the binary
+$ readelf -S ./binary
+  [Nr] Name              Type             Address           Off    Size
+  [ 1] .text             PROGBITS         0000000000401000  001000 000a3c
+  [ 2] .rodata           PROGBITS         000000000040200c  00200c 000128
+  [ 3] .data             PROGBITS         0000000000404000  003000 000048
+  [ 4] .bss              NOBITS           0000000000404048  003048 000010
+  ...
+
+# Symbol table -functions and variables with addresses
+$ readelf -s ./binary
+
+# Dynamic section -shared library dependencies
+$ readelf -d ./binary
+  Tag        Type       Name/Value
+  0x0000001  (NEEDED)   Shared library: [libc.so.6]
+  0x0000001  (NEEDED)   Shared library: [libssl.so.3]</code></pre>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2><code>nm</code> - Symbol Table Examination</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ nm ./my_program
+0000000000401000 T _start
+0000000000401156 T main
+0000000000401200 T check_password
+0000000000401300 T encrypt_data
+0000000000404000 D secret_key
+0000000000404030 B buffer
+                 U printf@@GLIBC_2.2.5
+                 U strcmp@@GLIBC_2.2.5
+                 U malloc@@GLIBC_2.2.5
+                 U free@@GLIBC_2.2.5</code></pre>
+<p><strong>Symbol types that matter:</strong></p>
+<table>
+<thead><tr>
+<th>Symbol</th>
+<th>Meaning</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>T</code></td>
+<td>Code in .text section (defined here)</td>
+</tr>
+<tr>
+<td><code>t</code></td>
+<td>Local/static code (not exported)</td>
+</tr>
+<tr>
+<td><code>D</code></td>
+<td>Initialized data (global variable)</td>
+</tr>
+<tr>
+<td><code>B</code></td>
+<td>Uninitialized data (.bss)</td>
+</tr>
+<tr>
+<td><code>U</code></td>
+<td>Undefined -imported from a library</td>
+</tr>
+<tr>
+<td><code>W</code></td>
+<td>Weak symbol (can be overridden)</td>
+</tr>
+</tbody>
+</table>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># On a stripped binary:
+$ nm ./stripped_binary
+nm: ./stripped_binary: no symbols
+
+# Use dynamic symbols instead:
+$ nm -D ./stripped_binary
+                 U printf
+                 U strcmp</code></pre>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2><code>objdump -d</code> - Disassembly</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ objdump -d ./crackme | less</code></pre>
+<p>You don't need to read every instruction. Look for patterns:</p>
+<pre><code class="nohighlight" data-trim data-noescape>0000000000401156 &lt;main&gt;:
+  40115e:   lea    0xe9f(%rip),%rdi        # &lt;-- loads a string (the prompt)
+  401165:   call   401030 &lt;puts@plt&gt;       #     prints it
+  ...
+  401181:   lea    0xe98(%rip),%rsi        # &lt;-- loads another string (the secret password)
+  401188:   mov    %rax,%rdi              #     first arg = user input
+  40118b:   call   401040 &lt;strcmp@plt&gt;     # &lt;-- KEY: compares two strings
+  401190:   test   %eax,%eax              #     was strcmp result zero?
+  401192:   jne    4011a2 &lt;main+0x4c&gt;     # &lt;-- BRANCH: jump to &quot;wrong&quot; if not equal</code></pre>
+<ul><li><strong><code>lea</code> ... <code>%rsi</code></strong> = loading the secret string address for comparison</li><li><strong><code>call strcmp</code></strong> = the comparison function (this is what Frida will hook)</li><li><strong><code>jne</code></strong> = "jump if not equal" (the decision point: correct vs wrong path)</li></ul>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>Reading Disassembly: Quick x86 Guide</h2>
+<pre><code class="nohighlight" data-trim data-noescape>Common instructions you&#x27;ll see:
+
+mov  dst, src     -copy value
+lea  dst, [addr]  -load effective address (pointer math)
+push val          -push onto stack
+pop  reg          -pop from stack
+call addr         -call function
+ret               -return from function
+cmp  a, b         -compare two values (sets flags)
+test a, b         -bitwise AND, sets flags (test eax,eax = check if zero)
+je / jne          -jump if equal / not equal
+jmp  addr         -unconditional jump
+xor  reg, reg     -zero a register (common idiom)</code></pre>
+<p><strong>Pattern to recognize -password/key check:</strong></p>
+<pre data-lang="asm"><code class="language-asm" data-trim data-noescape>call   strcmp@plt      ; compare two strings
+test   %eax,%eax      ; is result zero?
+jne    wrong_label     ; if not equal, jump to &quot;wrong&quot; path
+; ... &quot;correct&quot; path falls through here</code></pre>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>Ghidra - Decompilation</h2>
+<p>Ghidra is the NSA's open-source reverse engineering framework.</p>
+<p>It can <strong>decompile</strong> assembly back into C-like pseudocode:</p>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// Ghidra decompiler output (reconstructed from assembly)
+int main(void) {
+    char user_input[16];
+
+    puts(&quot;Enter password:&quot;);
+    scanf(&quot;%15s&quot;, user_input);
+
+    if (strcmp(user_input, &quot;s3cret_k3y&quot;) == 0) {
+        puts(&quot;Access granted!&quot;);
+        return 0;
+    } else {
+        puts(&quot;Wrong password!&quot;);
+        return 1;
+    }
+}</code></pre>
+<p><strong>We won't deep-dive into Ghidra today</strong> -it deserves its own workshop. But know it exists and is free: https://ghidra-sre.org/</p>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>Limitations of Static Analysis</h2>
+<h3>Obfuscation</h3>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// Original code
+if (strcmp(input, &quot;password123&quot;) == 0) { grant_access(); }
+
+// Obfuscated -string built at runtime
+char pw[] = {0x70^0x41, 0x61^0x41, 0x73^0x41, ...};  // XOR encoded
+for (int i = 0; i &lt; len; i++) pw[i] ^= 0x41;         // decoded at runtime
+if (strcmp(input, pw) == 0) { grant_access(); }</code></pre>
+<p><code>strings</code> will NOT find "password123" in the obfuscated version.</p>
+<h3>Other limitations:</h3>
+<ul><li><strong>Packed binaries</strong> -UPX, custom packers compress/encrypt the real code</li><li><strong>Runtime code generation</strong> -JIT, self-modifying code</li><li><strong>Anti-disassembly tricks</strong> -junk bytes, opaque predicates</li><li><strong>Environment-dependent behavior</strong> -checks OS, time, network before acting</li></ul>
+<p><strong>This is where dynamic analysis shines.</strong></p>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>Hands-On Exercise: Static Analysis</h2>
+<p>Let's compile and analyze a sample binary:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Create a simple target
+cat &lt;&lt; &#x27;CEOF&#x27; &gt; /tmp/static_target.c
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+const char *secret = &quot;LUG_2024_flag&quot;;
+
+int check_access(const char *input) {
+    return strcmp(input, secret) == 0;
+}
+
+int main() {
+    char buf[64];
+    printf(&quot;Enter access code: &quot;);
+    fgets(buf, sizeof(buf), stdin);
+    buf[strcspn(buf, &quot;\n&quot;)] = 0;
+
+    if (check_access(buf)) {
+        printf(&quot;Access granted! Flag: FLAG{%s}\n&quot;, secret);
+    } else {
+        printf(&quot;Access denied.\n&quot;);
+    }
+    return 0;
+}
+CEOF
+
+# Compile it
+gcc -o /tmp/static_target /tmp/static_target.c -no-pie</code></pre>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>Hands-On Exercise: Static Analysis (cont.)</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Now analyze it WITHOUT running it:
+file /tmp/static_target
+strings /tmp/static_target | grep -i -E &quot;flag|access|secret&quot;
+nm /tmp/static_target | grep -E &quot;T |U &quot;
+readelf -d /tmp/static_target
+objdump -d /tmp/static_target | grep -A 20 &quot;&lt;check_access&gt;&quot;</code></pre>
+<p>Can you find the secret without running the binary?</p>
+<p>See <strong><code>exercises/ex01-static-recon.md</code></strong> for the full walkthrough on <code>exercises/bin/ex01_password_check</code>.</p>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>Exercise Solution</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strings /tmp/static_target | grep -i flag
+LUG_2024_flag
+Access granted! Flag: FLAG{%s}
+
+$ nm /tmp/static_target | grep -E &quot; T | U &quot;
+0000000000401156 T check_access
+0000000000401180 T main
+                 U fgets@@GLIBC_2.2.5
+                 U printf@@GLIBC_2.2.5
+                 U strcmp@@GLIBC_2.2.5
+                 U strcspn@@GLIBC_2.2.5
+
+$ objdump -d -M intel /tmp/static_target | grep -A 10 &quot;&lt;check_access&gt;&quot;
+0000000000401156 &lt;check_access&gt;:
+  401156:   push   rbp
+  401157:   mov    rbp, rsp
+  40115a:   mov    QWORD PTR [rbp-0x8], rdi   # save input pointer
+  40115e:   mov    rsi, QWORD PTR [rip+0x2eab] # load secret pointer
+  401165:   mov    rdi, QWORD PTR [rbp-0x8]   # load input pointer
+  401169:   call   401030 &lt;strcmp@plt&gt;          # compare them
+  40116e:   test   eax, eax
+  401170:   sete   al                          # return 1 if equal</code></pre>
+<p>The secret was plainly visible in <code>strings</code>. In real targets, it rarely is this easy.</p>
+            </section>
+
+            <section data-module="02-static-analysis">
+                <h2>Summary</h2>
+<ul><li><strong>Static analysis</strong> examines binaries without executing them</li><li><strong>Reconnaissance tools:</strong> <code>file</code>, <code>strings</code> -quick surface-level info</li><li><strong>Structural tools:</strong> <code>readelf</code>, <code>nm</code> -ELF internals and symbols</li><li><strong>Code tools:</strong> <code>objdump</code>, Ghidra -disassembly and decompilation</li><li>Static analysis has clear <strong>limitations</strong> against obfuscation and packing</li><li>When static analysis hits a wall, <strong>dynamic analysis</strong> picks up</li></ul>
+<p><strong>Next up: Dynamic Analysis -watching programs run</strong></p>
+            </section>
+
+            <section class="module-title" data-module="03-dynamic-analysis">
+                <h1>Dynamic Analysis</h1>
+<h2>Observing Programs in Action</h2>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>What Is Dynamic Analysis?</h2>
+<p>Analyzing a binary <strong>while it executes</strong>.</p>
+<p>Instead of reading dead code on disk, you watch the living program:</p>
+<ul><li>What system calls does it make?</li><li>What library functions does it call, and with what arguments?</li><li>What data flows through memory?</li><li>How does it respond to different inputs?</li></ul>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Static vs Dynamic: Comparison</h2>
+<table>
+<thead><tr>
+<th>Aspect</th>
+<th>Static Analysis</th>
+<th>Dynamic Analysis</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Execution required?</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Safety</td>
+<td>Safe (nothing runs..)</td>
+<td>Risk (code executes)</td>
+</tr>
+<tr>
+<td>Code coverage</td>
+<td>All paths visible</td>
+<td>Only executed paths</td>
+</tr>
+<tr>
+<td>Obfuscation</td>
+<td>Major obstacle</td>
+<td>Code decrypted at runtime</td>
+</tr>
+<tr>
+<td>Packed binaries</td>
+<td>See packer, not payload</td>
+<td>See unpacked payload</td>
+</tr>
+<tr>
+<td>Actual data values</td>
+<td>Inferred from structure</td>
+<td>Observed directly</td>
+</tr>
+<tr>
+<td>Runtime behavior</td>
+<td>Theoretical</td>
+<td>Real</td>
+</tr>
+<tr>
+<td>Modify behavior?</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Stripped binaries</td>
+<td>Limited info</td>
+<td>Still fully observable</td>
+</tr>
+<tr>
+<td>Speed of analysis</td>
+<td>Can be slow for big bins</td>
+<td>Fast for targeted questions</td>
+</tr>
+</tbody>
+</table>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Why Dynamic Analysis Is Often Superior</h2>
+<h3>1. Sees actual runtime behavior</h3>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// Which branch executes? Static analysis sees both.
+// Dynamic analysis sees the one that actually runs.
+if (time(NULL) % 2 == 0) {
+    do_normal_thing();
+} else {
+    do_sneaky_thing();
+}</code></pre>
+<h3>2. Defeats obfuscation and packing</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Static: strings finds nothing useful in a UPX-packed binary
+$ strings packed_malware | wc -l
+12
+
+# Dynamic: strace sees everything the unpacked code does
+$ strace ./packed_malware 2&gt;&amp;1 | grep connect
+connect(3, {sa_family=AF_INET, sin_port=htons(4444),
+        sin_addr=inet_addr(&quot;10.0.0.1&quot;)}, 16) = 0</code></pre>
+<p>The packer decrypts the real code in memory. Dynamic analysis sees the result.</p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Why Dynamic Analysis Is Often Superior (cont.)</h2>
+<h3>3. Reveals actual data values</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># What password does the program actually compare against?
+$ ltrace ./crackme &lt;&lt;&lt; &quot;test&quot;
+strcmp(&quot;test&quot;, &quot;runtime_generated_pw!&quot;)  = -1
+puts(&quot;Wrong!&quot;)                          = 7</code></pre>
+<p>The password was built at runtime -<code>strings</code> could never find it.</p>
+<h3>4. Can modify behavior on the fly</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Frida: make check_password() always return true
+Interceptor.replace(
+    Module.getGlobalExportByName(&quot;check_password&quot;),
+    new NativeCallback(function() {
+        return 1;  // always &quot;correct&quot;
+    }, &#x27;int&#x27;, [&#x27;pointer&#x27;])
+);</code></pre>
+<h3>5. Works on stripped binaries</h3>
+<p>No symbols? No problem. You can still trace every syscall, every library call, and hook any address.</p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>The Dynamic Analysis Tool Spectrum</h2>
+<pre><code class="nohighlight" data-trim data-noescape>Least invasive                                    Most powerful
+      |                                                 |
+      v                                                 v
+
+  strace        ltrace        gdb        LD_PRELOAD     Frida
+    |              |            |             |            |
+  syscalls     lib calls    stepping     hook libs    hook anything
+  read-only    read-only    read/write   write        read/write
+  no setup     no setup     some setup   coding       scripting
+  low impact   low impact   stops exec   moderate     powerful</code></pre>
+<p>Each tool has its sweet spot. Use the simplest tool that answers your question.</p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>The Instrumentation Pyramid</h2>
+<pre><code class="nohighlight" data-trim data-noescape>                 +-------------------------+
+                 |  DBI Frameworks         |  Pin, DynamoRIO, Valgrind
+                 |  (full control)         |  Rewrite every instruction
+                 +-------------------------+
+                  +-------------------------+
+                  |    Frida                 |  Programmable hooking
+                  |    (scriptable hooks)    |  JavaScript/Python API
+                  +-------------------------+
+               +-------------------------------+
+               |    LD_PRELOAD                  |  Replace library functions
+               |    (function replacement)      |  At load time
+               +-------------------------------+
+            +-------------------------------------+
+            |    gdb                               |  Breakpoints, stepping
+            |    (interactive debugging)           |  Inspect/modify state
+            +-------------------------------------+
+         +-----------------------------------------+
+         |    ltrace                                |  Trace library calls
+         |    (library call tracing)                |  Arguments and returns
+         +-----------------------------------------+
+      +---------------------------------------------+
+      |    strace                                    |  Trace system calls
+      |    (system call tracing)                     |  Kernel boundary
+      +---------------------------------------------+</code></pre>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>strace - System Call Tracing</h2>
+<p>Traces every system call a program makes to the kernel.</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Basic usage
+$ strace ./program
+execve(&quot;./program&quot;, [&quot;./program&quot;], ...) = 0
+brk(NULL)                               = 0x55b3a4c5d000
+openat(AT_FDCWD, &quot;/etc/ld.so.cache&quot;, O_RDONLY) = 3
+read(3, &quot;\177ELF\2\1\1\3\0\0\0\0\0\0\0\0&quot;..., 832) = 832
+...
+write(1, &quot;Hello, World!\n&quot;, 14)         = 14
+exit_group(0)                           = ?
+
+# Follow child processes
+$ strace -f ./daemon
+
+# Filter by syscall category
+$ strace -e trace=network ./client
+$ strace -e trace=file ./program
+$ strace -e trace=write ./program
+
+# Show timestamps
+$ strace -t ./program
+
+# Count syscalls (summary)
+$ strace -c ./program</code></pre>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>strace - Practical Examples</h2>
+<h3>Finding out what files a program opens:</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strace -e trace=openat ./mystery_app 2&gt;&amp;1 | head
+openat(AT_FDCWD, &quot;/etc/ld.so.cache&quot;, O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, &quot;/lib/x86_64-linux-gnu/libc.so.6&quot;, O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, &quot;/home/user/.config/mystery/config.ini&quot;, O_RDONLY) = 4
+openat(AT_FDCWD, &quot;/tmp/.mystery_cache&quot;, O_RDWR|O_CREAT, 0600) = 5</code></pre>
+<h3>Finding out what a program sends over the network:</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strace -e trace=network -s 256 ./client 2&gt;&amp;1
+socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3
+connect(3, {sa_family=AF_INET, sin_port=htons(8080),
+        sin_addr=inet_addr(&quot;192.168.1.100&quot;)}, 16) = 0
+sendto(3, &quot;GET /api/key?token=abc123 HTTP/1.1\r\n...&quot;, 89, 0, NULL, 0) = 89</code></pre>
+<h3>Why does a program crash?</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strace ./crashing_app 2&gt;&amp;1 | tail -5
+openat(AT_FDCWD, &quot;/etc/app/required.conf&quot;, O_RDONLY) = -1 ENOENT (No such file)
+write(2, &quot;Error: config file not found\n&quot;, 29) = 29
+exit_group(1)</code></pre>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>ltrace - Library Call Tracing</h2>
+<p>Traces calls to shared library functions (libc, libssl, etc.).</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Basic usage
+$ ltrace ./crackme &lt;&lt;&lt; &quot;wrongpass&quot;
+puts(&quot;Enter the password:&quot;)                       = 21
+fgets(&quot;wrongpass\n&quot;, 64, 0x7f8a3c1ba980)          = 0x7ffc8a2d3e10
+strcspn(&quot;wrongpass\n&quot;, &quot;\n&quot;)                       = 9
+strcmp(&quot;wrongpass&quot;, &quot;sup3r_s3cret!&quot;)                = -1
+puts(&quot;Access denied.&quot;)                             = 15
++++ exited (status 1) +++
+
+# Filter to specific libraries
+$ ltrace -e strcmp+strlen ./program
+
+# Show nested calls
+$ ltrace -n 2 ./program
+
+# Demangle C++ symbols
+$ ltrace -C ./cpp_program</code></pre>
+<p><strong>Look at that <code>strcmp</code> call</strong> -the password is <code>sup3r_s3cret!</code>, revealed in plain text even if the binary was obfuscated.</p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>ltrace vs strace</h2>
+<pre><code class="nohighlight" data-trim data-noescape>                    User Space
+    +-----------------------------------------+
+    |  Your Program                            |
+    |    |                                     |
+    |    +---&gt; printf(&quot;Hello %s&quot;, name)        |  &lt;-- ltrace sees this
+    |    |         |                           |
+    |    |         +---&gt; formatting logic       |
+    |    |         |                           |
+    |    |         +---&gt; write(1, &quot;Hello Bob&quot;) |
+    |    |                    |                |
+    +----|--------------------|-----------------+
+         |                    |
+    =====|====================|=================  Kernel Boundary
+         |                    |
+    +----|--------------------|-----------------+
+    |    |               write(1, buf, 9)      |  &lt;-- strace sees this
+    |    |               (system call)          |
+    |  Kernel                                   |
+    +-----------------------------------------+</code></pre>
+<ul><li><strong>strace</strong> = kernel boundary (syscalls) -lower level, always available</li><li><strong>ltrace</strong> = library boundary -higher level, more readable, needs dynamic linking</li></ul>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>gdb - Interactive Debugging</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Start debugging
+$ gdb ./program
+(gdb) break main
+(gdb) run
+
+# At a breakpoint, inspect state
+(gdb) info registers
+(gdb) x/s $rdi                    # examine string at rdi
+(gdb) x/20i $rip                  # disassemble 20 instructions at current point
+(gdb) print (char*)0x404010       # print string at address
+
+# Modify execution
+(gdb) set $rax = 1                # change return value
+(gdb) set *(int*)0x404030 = 42    # write to memory
+(gdb) jump *0x40119a              # jump to address
+
+# Continue
+(gdb) continue
+(gdb) step                        # step into
+(gdb) next                        # step over</code></pre>
+<p><strong>gdb is powerful but manual.</strong> Frida lets you automate what you'd do in gdb.</p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>LD_PRELOAD - Function Replacement</h2>
+<p>Override library functions by loading your code first:</p>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// bypass_check.c
+#include &lt;string.h&gt;
+
+// Our strcmp always returns 0 (strings &quot;match&quot;)
+int strcmp(const char *s1, const char *s2) {
+    return 0;
+}</code></pre>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Compile as shared library
+$ gcc -shared -o bypass.so bypass_check.c
+
+# Load it before libc
+$ LD_PRELOAD=./bypass.so ./crackme
+Enter password: anything_works
+Access granted!</code></pre>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>LD_PRELOAD - Function Replacement (cont.)</h2>
+<p><strong>Limitations of LD_PRELOAD:</strong></p>
+<ul><li>Only works at load time (cannot attach to running process)</li><li>Only replaces dynamically linked functions</li><li>Requires writing and compiling C code</li><li>Cannot selectively hook (replaces ALL calls to that function)</li></ul>
+<p><strong>Frida solves all of these limitations.</strong> It automates what <code>LD_PRELOAD</code> does manually - and adds scripting, selective hooking, and runtime attachment.</p>
+<table>
+<thead><tr>
+<th></th>
+<th>LD_PRELOAD</th>
+<th>Frida</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Hook timing</strong></td>
+<td>Load time only</td>
+<td>Any time (attach/spawn)</td>
+</tr>
+<tr>
+<td><strong>Language</strong></td>
+<td>C (compile, deploy)</td>
+<td>JavaScript (instant, live)</td>
+</tr>
+<tr>
+<td><strong>Selectivity</strong></td>
+<td>Replaces all calls</td>
+<td>Hook specific calls with conditions</td>
+</tr>
+<tr>
+<td><strong>Attach to running</strong></td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Read args/returns</strong></td>
+<td>Manual code</td>
+<td>Built-in API</td>
+</tr>
+</tbody>
+</table>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>When To Use What</h2>
+<table>
+<thead><tr>
+<th>Situation</th>
+<th>Best Tool</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>"What files does this program open?"</td>
+<td><code>strace -e file</code></td>
+</tr>
+<tr>
+<td>"What network connections does it make?"</td>
+<td><code>strace -e network</code></td>
+</tr>
+<tr>
+<td>"What password does it compare against?"</td>
+<td><code>ltrace</code></td>
+</tr>
+<tr>
+<td>"What library functions does it call?"</td>
+<td><code>ltrace</code></td>
+</tr>
+<tr>
+<td>"I need to step through code instruction by instruction"</td>
+<td><code>gdb</code></td>
+</tr>
+<tr>
+<td>"I want to change a variable at a breakpoint"</td>
+<td><code>gdb</code></td>
+</tr>
+<tr>
+<td>"I want to replace a function for all calls"</td>
+<td><code>LD_PRELOAD</code></td>
+</tr>
+<tr>
+<td>"I want to hook specific calls with custom logic"</td>
+<td><strong>Frida</strong></td>
+</tr>
+<tr>
+<td>"I want to attach to a running process"</td>
+<td><strong>Frida</strong> or <code>gdb</code></td>
+</tr>
+<tr>
+<td>"I want to automate RE tasks with scripting"</td>
+<td><strong>Frida</strong></td>
+</tr>
+<tr>
+<td>"I need to intercept encrypted data before encryption"</td>
+<td><strong>Frida</strong></td>
+</tr>
+</tbody>
+</table>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Combining Tools: A Real Workflow</h2>
+<pre><code class="nohighlight" data-trim data-noescape>Step 1: Reconnaissance
+$ file ./target &amp;&amp; strings ./target | less
+
+Step 2: Quick dynamic overview
+$ strace -c ./target                  # what syscalls? how many?
+$ ltrace -c ./target                  # what library calls?
+
+Step 3: Targeted tracing
+$ strace -e openat,read,write ./target  # file I/O
+$ ltrace -e strcmp+strncmp ./target      # string comparisons
+
+Step 4: Interactive investigation
+$ gdb ./target                         # set breakpoints, inspect
+
+Step 5: Automated hooking
+$ frida -l hook.js ./target            # Frida for the win</code></pre>
+<p>Each step narrows the focus. Start broad, zoom in.</p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Security Note</h2>
+<p><strong>Always analyze untrusted binaries in an isolated environment.</strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Option 1: Virtual machine (VirtualBox, QEMU, virt-manager)
+# Full isolation, snapshot and restore
+
+# Option 2: Container with limited privileges
+$ docker run --rm -it --cap-drop=ALL \
+    -v ./samples:/samples:ro \
+    ubuntu:22.04 bash
+
+# Option 3: Firejail sandbox
+$ firejail --net=none --private ./suspicious_binary
+
+# Option 4: systemd-run with restrictions
+$ systemd-run --user --scope \
+    -p NoNewPrivileges=yes \
+    -p PrivateNetwork=yes \
+    ./suspicious_binary</code></pre>
+<p>Dynamic analysis <strong>executes code</strong>. If the binary is malicious, it will do malicious things.</p>
+<p>The targets in this workshop are safe -we compile them ourselves.</p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Hands-On Exercise: Dynamic Analysis</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Create a target with runtime string construction
+cat &lt;&lt; &#x27;CEOF&#x27; &gt; /tmp/dynamic_target.c
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+
+static char* build_password(void) {
+    char *pw = malloc(16);
+    pw[0] = &#x27;r&#x27;; pw[1] = &#x27;u&#x27;; pw[2] = &#x27;n&#x27;;
+    pw[3] = &#x27;t&#x27;; pw[4] = &#x27;i&#x27;; pw[5] = &#x27;m&#x27;;
+    pw[6] = &#x27;e&#x27;; pw[7] = &#x27;_&#x27;; pw[8] = &#x27;p&#x27;;
+    pw[9] = &#x27;w&#x27;; pw[10] = &#x27;!&#x27;; pw[11] = &#x27;\0&#x27;;
+    return pw;
+}
+
+int main() {
+    char buf[64];
+    char *password = build_password();
+
+    printf(&quot;Enter password: &quot;);
+    fgets(buf, sizeof(buf), stdin);
+    buf[strcspn(buf, &quot;\n&quot;)] = 0;
+
+    if (strcmp(buf, password) == 0) {
+        printf(&quot;Welcome in!\n&quot;);
+    } else {
+        printf(&quot;Nope.\n&quot;);
+    }
+    free(password);
+    return 0;
+}
+CEOF
+
+gcc -o /tmp/dynamic_target /tmp/dynamic_target.c</code></pre>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Exercise: Try It Yourself</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># 1. Does strings find the password?
+$ strings /tmp/dynamic_target | grep -i pass
+# (you&#x27;ll find &quot;password&quot; from variable names, but not the actual value)
+
+# 2. Use ltrace to find it
+$ ltrace /tmp/dynamic_target &lt;&lt;&lt; &quot;test&quot;
+# Look for the strcmp call!
+
+# 3. Use strace to see file/IO behavior
+$ strace -e trace=write /tmp/dynamic_target &lt;&lt;&lt; &quot;test&quot;
+# See the write() calls for prompts and output
+
+# 4. Now use the password you found
+$ /tmp/dynamic_target
+Enter password: &lt;what ltrace revealed&gt;
+Welcome in!</code></pre>
+<p><strong>Key takeaway:</strong> Static analysis failed. Dynamic analysis succeeded in seconds.</p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Summary</h2>
+<ul><li><strong>Dynamic analysis</strong> observes programs during execution</li><li>It defeats obfuscation, packing, and runtime code generation</li><li><strong>strace</strong> -system call tracing (kernel boundary)</li><li><strong>ltrace</strong> -library call tracing (user-space boundary)</li><li><strong>gdb</strong> -interactive debugging (full control, manual)</li><li><strong>LD_PRELOAD</strong> -function replacement (compile-time, limited)</li><li>Use the <strong>simplest tool</strong> that answers your question</li><li>Always sandbox untrusted binaries</li></ul>
+<p><strong>After the break: Frida -programmable instrumentation that combines the best of all these tools.</strong></p>
+            </section>
+
+            <section data-module="03-dynamic-analysis">
+                <h2>Break Time</h2>
+<p>Take 10 minutes. Stretch. Grab a drink.</p>
+<p>When we come back: <strong>Frida</strong> -the tool that changes everything.</p>
+<pre><code class="nohighlight" data-trim data-noescape>        ) )
+       ( (
+     .------.
+     |      |]
+     \      /
+      `----&#x27;
+
+  10 min break</code></pre>
+            </section>
+
+            <section class="module-title" data-module="04-strace-ltrace">
+                <h1>Module 4: strace & ltrace - Observing Program Behavior</h1>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>What is strace?</h2>
+<p><strong>strace</strong> traces <strong>system calls</strong> - the interface between your program and the Linux kernel.</p>
+<p>Every time a program:</p>
+<ul><li>Opens a file &rarr; <code>open()</code> / <code>openat()</code></li><li>Reads data &rarr; <code>read()</code></li><li>Writes output &rarr; <code>write()</code></li><li>Allocates memory &rarr; <code>mmap()</code> / <code>brk()</code></li><li>Creates a process &rarr; <code>fork()</code> / <code>clone()</code></li></ul>
+<p>...the kernel is involved, and <strong>strace can see it</strong>.</p>
+<pre><code class="nohighlight" data-trim data-noescape>┌─────────────┐         syscalls         ┌────────────┐
+│  User Space  │ ──────────────────────&gt; │   Kernel    │
+│  (your app)  │ &lt;────────────────────── │  (Linux)    │
+└─────────────┘    strace intercepts     └────────────┘
+                      these calls</code></pre>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>strace Basics</h2>
+<h3>Trace a program from the start</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>strace ./program</code></pre>
+<h3>Trace a specific command</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>strace ls /tmp</code></pre>
+<h3>Filter specific syscalls</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>strace -e trace=open,read,write ./program</code></pre>
+<h3>Output is written to <strong>stderr</strong> by default</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Separate strace output from program output
+strace -o trace.log ./program</code></pre>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Essential strace Flags</h2>
+<table>
+<thead><tr>
+<th>Flag</th>
+<th>Purpose</th>
+<th>Example</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>-e trace=SET</code></td>
+<td>Filter syscalls</td>
+<td><code>-e trace=open,read,write</code></td>
+</tr>
+<tr>
+<td><code>-f</code></td>
+<td>Follow child processes</td>
+<td><code>strace -f ./server</code></td>
+</tr>
+<tr>
+<td><code>-p PID</code></td>
+<td>Attach to running process</td>
+<td><code>strace -p 1234</code></td>
+</tr>
+<tr>
+<td><code>-o FILE</code></td>
+<td>Write output to file</td>
+<td><code>-o trace.log</code></td>
+</tr>
+<tr>
+<td><code>-c</code></td>
+<td>Summary / statistics</td>
+<td>Shows call counts & times</td>
+</tr>
+<tr>
+<td><code>-s SIZE</code></td>
+<td>Max string print length</td>
+<td><code>-s 200</code> (default: 32)</td>
+</tr>
+</tbody>
+</table>
+<blockquote><p>See the cheat sheet at the end for more flags.</p></blockquote>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>strace: Real Examples</h2>
+<p><strong>Example 1: <code>cat /etc/passwd</code></strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strace -e trace=openat,read,write,close cat /etc/passwd 2&gt;&amp;1 | head -25</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>openat(AT_FDCWD, &quot;/etc/ld.so.cache&quot;, O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, &quot;/lib/x86_64-linux-gnu/libc.so.6&quot;, O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, &quot;/etc/passwd&quot;, O_RDONLY) = 3
+read(3, &quot;root:x:0:0:root:/root:/bin/bash\n&quot;..., 131072) = 2790
+write(1, &quot;root:x:0:0:root:/root:/bin/bash\n&quot;..., 2790) = 2790</code></pre>
+<ul><li>Linker loads libc first, then opens <code>/etc/passwd</code> as fd 3</li><li>Reads 2790 bytes, writes them to fd 1 (stdout)</li></ul>
+<p><strong>Example 2: <code>ls /tmp</code></strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strace -e trace=openat ls /tmp 2&gt;&amp;1 | head -10</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>openat(AT_FDCWD, &quot;/etc/ld.so.cache&quot;, O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, &quot;/lib/x86_64-linux-gnu/libc.so.6&quot;, O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, &quot;/lib/x86_64-linux-gnu/libpcre2-8.so.0&quot;, O_RDONLY|O_CLOEXEC) = 3
+openat(AT_FDCWD, &quot;/tmp&quot;, O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_DIRECTORY) = 3</code></pre>
+<ul><li>Even a simple <code>ls</code> opens many files: shared libraries, locale data, then the target directory</li></ul>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>strace Summary Mode (-c)</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strace -c ls /tmp 2&gt;&amp;1</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 28.43    0.000054           6         9           mmap
+ 14.74    0.000028           4         7           openat
+ 11.58    0.000022           3         7           close
+ 10.00    0.000019           3         7           fstat
+  8.42    0.000016           2         7           mprotect
+  5.79    0.000011          11         1           write
+  5.26    0.000010           3         3           read
+  4.21    0.000008           4         2           getdents64
+  3.68    0.000007           3         2           pread64
+  ...
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000190           3        56         1 total</code></pre>
+<p>Great for profiling - see which syscalls dominate.</p>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>strace: Attach to a Running Process</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Find the PID
+$ pidof firefox
+28491
+
+# Attach to it (requires ptrace permissions)
+$ sudo strace -p 28491</code></pre>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Follow all threads of a multi-threaded process
+$ sudo strace -fp 28491</code></pre>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Watch what files a running process opens
+$ sudo strace -p 28491 -e trace=openat</code></pre>
+<p>This is extremely useful for debugging running services and daemons.</p>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>What is ltrace?</h2>
+<p><strong>ltrace</strong> traces <strong>library function calls</strong> - calls your program makes to shared libraries (libc, libssl, etc.).</p>
+<pre><code class="nohighlight" data-trim data-noescape>┌─────────────┐     library calls     ┌─────────────┐     syscalls     ┌────────┐
+│  Your App    │ ───────────────────&gt; │  libc.so     │ ──────────────&gt; │ Kernel │
+│              │ &lt;─────────────────── │  libssl.so   │ &lt;────────────── │        │
+└─────────────┘   ltrace intercepts   └─────────────┘                  └────────┘
+                    these calls           strace intercepts these ──────┘</code></pre>
+<p><strong>Key difference:</strong></p>
+<ul><li><strong>strace</strong> = kernel-level view (syscalls)</li><li><strong>ltrace</strong> = library-level view (function calls like <code>strcmp</code>, <code>malloc</code>, <code>printf</code>)</li></ul>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>ltrace Basics</h2>
+<h3>Trace a program from the start</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>ltrace ./program</code></pre>
+<h3>Show longer strings (default truncates at 32 chars)</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>ltrace -s 200 ./program</code></pre>
+<h3>Filter specific functions</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>ltrace -e strcmp+strlen+puts ./program</code></pre>
+<h3>Trace calls to a specific library</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>ltrace -l libcrypto.so ./program</code></pre>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Essential ltrace Flags</h2>
+<table>
+<thead><tr>
+<th>Flag</th>
+<th>Purpose</th>
+<th>Example</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>-e FILTER</code></td>
+<td>Filter functions</td>
+<td><code>-e malloc+free</code></td>
+</tr>
+<tr>
+<td><code>-s SIZE</code></td>
+<td>Max string display length</td>
+<td><code>-s 200</code></td>
+</tr>
+<tr>
+<td><code>-C</code></td>
+<td>Demangle C++ names</td>
+<td>Makes C++ output readable</td>
+</tr>
+<tr>
+<td><code>-n INDENT</code></td>
+<td>Indent nested calls</td>
+<td><code>-n 4</code></td>
+</tr>
+<tr>
+<td><code>-p PID</code></td>
+<td>Attach to running process</td>
+<td><code>-p 1234</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote><p>See the cheat sheet at the end for more flags.</p></blockquote>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Real Example: ltrace on a Simple Program</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ cat hello.c
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main() {
+    char buf[64];
+    printf(&quot;Enter password: &quot;);
+    fgets(buf, 64, stdin);
+    buf[strlen(buf)-1] = &#x27;\0&#x27;;  // strip newline
+    if (strcmp(buf, &quot;opensesame&quot;) == 0) {
+        puts(&quot;Access granted!&quot;);
+    } else {
+        puts(&quot;Access denied!&quot;);
+    }
+    return 0;
+}</code></pre>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ gcc -o hello hello.c</code></pre>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>THE KEY DEMO: ltrace Reveals Passwords</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ ltrace -s 200 ./hello</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>printf(&quot;Enter password: &quot;)                     = 16
+Enter password: wrongguess
+fgets(&quot;wrongguess\n&quot;, 64, 0x7f8a1b2d4a00)     = 0x7ffc3e8a1b20
+strlen(&quot;wrongguess\n&quot;)                         = 11
+strcmp(&quot;wrongguess&quot;, &quot;opensesame&quot;)              = 8
+puts(&quot;Access denied!&quot;)                         = 15
+Access denied!
++++ exited (status 0) +++</code></pre>
+<h3>The password is RIGHT THERE: <code>strcmp(&quot;wrongguess&quot;, &quot;opensesame&quot;)</code></h3>
+<p>ltrace shows <strong>both arguments</strong> to <code>strcmp</code> - the user input AND the secret!</p>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Let's Verify It Works</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ ltrace -s 200 ./hello</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>printf(&quot;Enter password: &quot;)                     = 16
+Enter password: opensesame
+fgets(&quot;opensesame\n&quot;, 64, 0x7f8a1b2d4a00)     = 0x7ffc3e8a1b20
+strlen(&quot;opensesame\n&quot;)                         = 11
+strcmp(&quot;opensesame&quot;, &quot;opensesame&quot;)              = 0
+puts(&quot;Access granted!&quot;)                        = 16
+Access granted!
++++ exited (status 0) +++</code></pre>
+<p><code>strcmp</code> returns <strong>0</strong> (strings are equal) &rarr; access granted!</p>
+<p>This is why <strong>hardcoded plaintext passwords are never safe</strong> - even in compiled binaries.</p>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Quick Exercises</h2>
+<p>Try these on your own (5 minutes each):</p>
+<p><strong>1. Find what files a program opens</strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strace -e trace=openat -o /tmp/trace.log python3 -c &quot;import os; print(os.getenv(&#x27;HOME&#x27;))&quot;
+$ grep -v &quot;ld.so\|libc\|libpthread\|libdl&quot; /tmp/trace.log</code></pre>
+<p>Why does <code>os.getenv(&#x27;HOME&#x27;)</code> open <code>/etc/passwd</code>?</p>
+<p><strong>2. Find a hardcoded password with ltrace</strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ ltrace -s 200 ./secret_checker</code></pre>
+<p>Look for <code>strcmp</code> - the password is right there in the arguments.</p>
+<p><strong>3. Network tracing with strace</strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ strace -e trace=network curl -s https://example.com -o /dev/null</code></pre>
+<p>Identify the IP address, port, and protocol from the <code>connect()</code> call.</p>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>strace vs ltrace: Side-by-Side Comparison</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># The same simple program, two different views:</code></pre>
+<p><strong>ltrace</strong> (library calls):</p>
+<pre><code class="nohighlight" data-trim data-noescape>printf(&quot;Hello %s\n&quot;, &quot;world&quot;)     = 12
+malloc(1024)                       = 0x55a1b2c3d4e0
+strcmp(&quot;foo&quot;, &quot;bar&quot;)               = 4
+free(0x55a1b2c3d4e0)              = &lt;void&gt;</code></pre>
+<p><strong>strace</strong> (system calls):</p>
+<pre><code class="nohighlight" data-trim data-noescape>write(1, &quot;Hello world\n&quot;, 12)     = 12
+brk(0x55a1b2c5f000)              = 0x55a1b2c5f000
+write(1, &quot;Match!\n&quot;, 7)           = 7</code></pre>
+<table>
+<thead><tr>
+<th></th>
+<th>strace</th>
+<th>ltrace</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Level</strong></td>
+<td>Kernel syscalls</td>
+<td>Library functions</td>
+</tr>
+<tr>
+<td><strong>Sees</strong></td>
+<td>open, read, write, mmap</td>
+<td>strcmp, malloc, printf</td>
+</tr>
+<tr>
+<td><strong>Shows</strong></td>
+<td>OS-level behavior</td>
+<td>Application-level logic</td>
+</tr>
+<tr>
+<td><strong>Best for</strong></td>
+<td>File/network/process debugging</td>
+<td>Finding passwords, logic flow</td>
+</tr>
+</tbody>
+</table>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Advanced strace: Conditional Tracing</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Only show syscalls that FAIL
+$ strace -e trace=openat -Z ./program
+openat(AT_FDCWD, &quot;/etc/app.conf&quot;, O_RDONLY) = -1 ENOENT (No such file or directory)
+
+# Show syscalls that return a specific error
+$ strace -e trace=openat -e status=failed ./program
+
+# Trace only syscalls related to signals
+$ strace -e trace=signal ./program
+
+# Trace memory-related syscalls
+$ strace -e trace=memory ./program
+
+# Decode file descriptor paths in output
+$ strace -y -e trace=read,write ./program
+read(3&lt;/etc/passwd&gt;, &quot;root:x:0:0:...&quot;..., 4096) = 2790
+write(1&lt;/dev/pts/0&gt;, &quot;root:x:0:0:...&quot;..., 2790) = 2790</code></pre>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Advanced ltrace: Tracing Local Functions</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Trace internal (non-library) function calls too
+$ ltrace -x &#x27;*&#x27; ./program</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>main(1, 0x7ffd12345678, 0x7ffd12345688, 0) = &lt;unfinished ...&gt;
+validate_input(0x7ffd12345420, 64, 0, 0)   = &lt;unfinished ...&gt;
+strlen(&quot;user_input&quot;)                         = 10
+strcmp(&quot;user_input&quot;, &quot;secret123&quot;)            = 1
+&lt;... validate_input resumed&gt;                 = 0
+puts(&quot;Access denied!&quot;)                       = 15
+&lt;... main resumed&gt;                           = 1</code></pre>
+<p>Now we can see <strong>internal function names</strong> like <code>validate_input</code> - giving us more insight into program logic.</p>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Limitations of strace and ltrace</h2>
+<h3>1. ptrace-based (Detectable)</h3>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// Anti-debugging: program can detect it&#x27;s being traced
+if (ptrace(PTRACE_TRACEME, 0, 0, 0) == -1) {
+    printf(&quot;Debugger detected! Exiting.\n&quot;);
+    exit(1);
+}</code></pre>
+<h3>2. Performance Overhead</h3>
+<ul><li>strace: 10-100x slowdown on syscall-heavy programs</li><li>ltrace: significant overhead on function-call-heavy programs</li></ul>
+<h3>3. Observation Only</h3>
+<ul><li>You can <strong>see</strong> what happens, but you <strong>cannot change</strong> it</li><li>Cannot modify arguments, return values, or program flow</li></ul>
+<h3>4. Stripped/Obfuscated Binaries</h3>
+<ul><li>ltrace struggles with statically linked binaries (no dynamic library calls)</li><li>Custom <code>strcmp</code> implementations won't show up in ltrace</li></ul>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>The Bridge to Frida</h2>
+<p>We just saw ltrace reveal: <code>strcmp(&quot;wrongguess&quot;, &quot;opensesame&quot;) = 8</code></p>
+<p>But what if the password is computed at runtime, hashed, or fetched from a server?</p>
+<table>
+<thead><tr>
+<th></th>
+<th>strace/ltrace</th>
+<th>Frida</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Observe</strong> calls</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Modify</strong> arguments</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Change</strong> return values</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Replace</strong> functions</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Modify binary on disk</strong></td>
+<td>N/A</td>
+<td>Not needed</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="nohighlight" data-trim data-noescape>ltrace:  observe  ──&gt;  &quot;I can see the strcmp call&quot;
+Frida:   control  ──&gt;  &quot;I can make strcmp return whatever I want&quot;</code></pre>
+<p><strong>Preview:</strong> Frida script to force <code>strcmp</code> to always return 0 (match):</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        console.log(&quot;strcmp(&quot; + args[0].readUtf8String() +
+            &quot;, &quot; + args[1].readUtf8String() + &quot;)&quot;);
+    },
+    onLeave(retval) { retval.replace(0); }  // Force match!
+});</code></pre>
+<p>We will build exactly this in the next modules.</p>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Cheat Sheet: strace & ltrace</h2>
+<p><strong>strace essentials:</strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>strace ./program                          # Trace from start
+strace -p PID                             # Attach to running process
+strace -f ./program                       # Follow forks/threads
+strace -e trace=file ./program            # File operations only
+strace -e trace=network ./program         # Network operations only
+strace -s 200 ./program                   # Show 200 chars of strings
+strace -c ./program                       # Summary statistics
+strace -o output.log ./program            # Save to file
+strace -Z ./program                       # Only show failed calls</code></pre>
+<p><strong>ltrace essentials:</strong></p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>ltrace ./program                          # Trace from start
+ltrace -s 200 ./program                   # Show 200 chars of strings
+ltrace -e strcmp+strlen+puts ./program    # Specific functions
+ltrace -l libcrypto.so ./program          # Specific library
+ltrace -x &#x27;*&#x27; ./program                   # Include local functions
+ltrace -c ./program                       # Summary statistics</code></pre>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Hands-On Lab (15 min)</h2>
+<p><strong>Target:</strong> <code>exercises/bin/ex01_password_check</code> <strong>Goal:</strong> Use strace and ltrace to discover a hardcoded password.</p>
+<p><strong>What you will practice:</strong></p>
+<ul><li>Filtering syscalls with <code>strace -e trace=openat</code></li><li>Finding password comparisons with <code>ltrace -s 200 | grep cmp</code></li><li>Interpreting function arguments and return values</li></ul>
+<p>See <strong><code>exercises/ex02-strace-ltrace.md</code></strong> for step-by-step instructions.</p>
+            </section>
+
+            <section data-module="04-strace-ltrace">
+                <h2>Summary</h2>
+<table>
+<thead><tr>
+<th>Tool</th>
+<th>What it traces</th>
+<th>Best for</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>strace</strong></td>
+<td>System calls (kernel interface)</td>
+<td>File access, network, process debugging</td>
+</tr>
+<tr>
+<td><strong>ltrace</strong></td>
+<td>Library function calls</td>
+<td>Finding passwords, understanding logic</td>
+</tr>
+<tr>
+<td><strong>Frida</strong> (next!)</td>
+<td>Everything + modification</td>
+<td>Full control over running programs</td>
+</tr>
+</tbody>
+</table>
+<h3>Key Takeaways</h3>
+<ol><li><strong>strace</strong> shows you the OS-level view: files, network, processes</li><li><strong>ltrace</strong> shows you the application-level view: function calls, arguments, return values</li><li>Both are <strong>observation only</strong> - you can see but not change</li><li>Both are <strong>ptrace-based</strong> - detectable by anti-debugging</li><li><strong>Frida</strong> overcomes these limitations - it can observe AND modify</li></ol>
+<h3>Next: Installing Frida and running our first instrumentation script</h3>
+            </section>
+
+            <section class="module-title" data-module="05-frida-install">
+                <h1>Module 5: Installing Frida & First Steps</h1>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>What is Frida?</h2>
+<p><strong>Frida</strong> is a <strong>dynamic instrumentation toolkit</strong> created by Ole Andre Vadla Ravnas.</p>
+<p>It lets you:</p>
+<ul><li><strong>Inject</strong> JavaScript into running processes</li><li><strong>Hook</strong> any function (library or internal)</li><li><strong>Read and modify</strong> arguments, return values, and memory</li><li><strong>Call</strong> functions that the program never intended you to call</li><li>Do all this <strong>at runtime</strong>, without modifying the binary on disk</li></ul>
+<h3>Think of it as:</h3>
+<blockquote><p>"ltrace on steroids, with the ability to change everything you observe"</p></blockquote>
+<p><strong>Website:</strong> https://frida.re | <strong>Source:</strong> https://github.com/frida/frida | <strong>License:</strong> wxWindows (permissive)</p>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Frida: Supported Platforms</h2>
+<table>
+<thead><tr>
+<th>Platform</th>
+<th>Use case</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Linux</strong> (x86, x64, ARM)</td>
+<td>This course - desktop/server RE</td>
+</tr>
+<tr>
+<td><strong>Android</strong></td>
+<td>Mobile app security, APK analysis</td>
+</tr>
+<tr>
+<td><strong>iOS / macOS</strong></td>
+<td>App store app analysis, jailbreak research</td>
+</tr>
+<tr>
+<td><strong>Windows</strong></td>
+<td>Malware analysis, game hacking, thick-client pentesting</td>
+</tr>
+<tr>
+<td><strong>QNX / FreeBSD</strong></td>
+<td>Embedded/automotive - often the <em>only</em> dynamic analysis option</td>
+</tr>
+</tbody>
+</table>
+<p>Today we focus on <strong>Linux</strong>, but your Frida skills transfer directly to all platforms.</p>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Frida Architecture</h2>
+<pre><code class="nohighlight" data-trim data-noescape>┌─────────────────────────────────────────────────────┐
+│                  YOUR MACHINE                        │
+│                                                      │
+│  ┌──────────────┐         ┌───────────────────────┐ │
+│  │ Frida Client │         │    Target Process      │ │
+│  │              │  IPC    │                         │ │
+│  │  Python /    │ &lt;────&gt; │  ┌──────────────────┐  │ │
+│  │  JS / CLI    │         │  │   Frida Agent    │  │ │
+│  │              │         │  │   (injected JS)  │  │ │
+│  └──────────────┘         │  │                  │  │ │
+│                           │  │  ┌────────────┐  │  │ │
+│                           │  │  │  Gum Engine │  │  │ │
+│                           │  │  │ (C, native) │  │  │ │
+│                           │  │  └────────────┘  │  │ │
+│                           │  └──────────────────┘  │ │
+│                           └───────────────────────┘ │
+└─────────────────────────────────────────────────────┘</code></pre>
+<h3>Three key components:</h3>
+<ol><li><strong>Client</strong> - your scripts (Python, JS, or CLI) that send instructions</li><li><strong>Agent</strong> - JavaScript runtime injected into the target process</li><li><strong>Gum</strong> - native C engine that performs the actual instrumentation (hooks, memory access, stalking)</li></ol>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>How Frida Works on Linux</h2>
+<h3>Injection process (step by step):</h3>
+<pre><code class="nohighlight" data-trim data-noescape>1. frida -p 1234 -l script.js
+       │
+2. Frida uses ptrace() to attach to process 1234
+       │
+3. Injects a shared library (frida-agent.so) into the target
+       │
+4. frida-agent.so starts a V8/QuickJS JavaScript runtime
+       │
+5. Your script.js is loaded into that runtime
+       │
+6. Gum engine hooks functions as directed by your script
+       │
+7. Client ←──IPC──→ Agent communicate results back</code></pre>
+<p><strong>Key points:</strong></p>
+<ul><li>Uses <strong>ptrace</strong> for initial injection (same mechanism as strace/ltrace/gdb)</li><li>After injection, communication is via a <strong>pipe/socket</strong> (not ptrace)</li><li>The JS engine runs <strong>inside</strong> the target process's address space</li><li>Hooks are implemented via <strong>inline hooking</strong> (rewriting function prologues)</li></ul>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Installation Method 1: pip (Recommended)</h2>
+<h3>This is the simplest and most reliable method.</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Install frida-tools (includes frida CLI, frida-trace, frida-ps, etc.)
+$ pip install frida-tools</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>Collecting frida-tools
+  Downloading frida_tools-12.5.1-py3-none-any.whl (178 kB)
+Collecting frida&gt;=16.5.6
+  Downloading frida-16.5.6-cp312-cp312-manylinux_2_28_x86_64.whl (42.3 MB)
+...
+Successfully installed frida-16.5.6 frida-tools-12.5.1</code></pre>
+<h3>Verify the installation:</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ frida --version
+16.5.6
+
+$ which frida
+/home/user/.local/bin/frida
+
+$ which frida-trace
+/home/user/.local/bin/frida-trace</code></pre>
+<p>If <code>frida</code> is not found after pip install, ensure <code>~/.local/bin</code> is in your PATH:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>export PATH=&quot;$HOME/.local/bin:$PATH&quot;</code></pre>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Verify Installation: frida-ps</h2>
+<p><strong>frida-ps</strong> lists processes that Frida can attach to.</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ frida-ps</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>  PID  Name
+-----  ----------------------------------------
+    1  systemd
+  487  systemd-journald
+  512  systemd-udevd
+  845  NetworkManager
+  891  sshd
+ 1023  bash
+ 1247  firefox
+ 1389  code
+ 2156  Xorg
+ ...</code></pre>
+<p>If you see a process list, <strong>Frida is working.</strong></p>
+<h3>Common frida-ps options:</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Show all processes with full details
+$ frida-ps -a
+
+# Show only applications (on Android/iOS - less relevant on desktop)
+$ frida-ps -ai
+
+# List USB-connected devices (for mobile testing)
+$ frida-ps -U</code></pre>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Frida CLI Tools Overview</h2>
+<p>Installing <code>frida-tools</code> gives you several command-line utilities:</p>
+<table>
+<thead><tr>
+<th>Tool</th>
+<th>Purpose</th>
+<th>Example</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>frida</strong></td>
+<td>Interactive REPL / script loader</td>
+<td><code>frida -p 1234 -l script.js</code></td>
+</tr>
+<tr>
+<td><strong>frida-trace</strong></td>
+<td>Auto-generate hooks for functions</td>
+<td><code>frida-trace -i &quot;strcmp&quot; ./prog</code></td>
+</tr>
+<tr>
+<td><strong>frida-ps</strong></td>
+<td>List running processes</td>
+<td><code>frida-ps</code></td>
+</tr>
+<tr>
+<td><strong>frida-discover</strong></td>
+<td>Discover internal functions</td>
+<td><code>frida-discover -p 1234</code></td>
+</tr>
+<tr>
+<td><strong>frida-kill</strong></td>
+<td>Kill a process by PID</td>
+<td><code>frida-kill 1234</code></td>
+</tr>
+<tr>
+<td><strong>frida-ls-devices</strong></td>
+<td>List available Frida devices</td>
+<td><code>frida-ls-devices</code></td>
+</tr>
+</tbody>
+</table>
+<h3>The ones we will use most:</h3>
+<ol><li><strong>frida</strong> - the main tool: attach to processes, load scripts, use the REPL</li><li><strong>frida-trace</strong> - quick function tracing without writing full scripts</li><li><strong>frida-ps</strong> - find process IDs to attach to</li></ol>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>First Test: frida-trace</h2>
+<p>Let's trace the <code>openat</code> syscall wrapper in libc when <code>ls</code> runs:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ frida-trace -i &quot;openat&quot; /bin/ls</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>Instrumenting...
+openat: Auto-generated handler at &quot;__handlers__/libc.so.6/openat.js&quot;
+Started tracing 1 function. Press Ctrl+C to stop.
+           /* TID 0x1a3b */
+  3412 ms  openat(dfd=-100, pathname=&quot;/etc/ld.so.cache&quot;, flags=0x80000)
+  3413 ms  openat(dfd=-100, pathname=&quot;/lib/x86_64-linux-gnu/libselinux.so.1&quot;, flags=0x80000)
+  3413 ms  openat(dfd=-100, pathname=&quot;/lib/x86_64-linux-gnu/libc.so.6&quot;, flags=0x80000)
+  3414 ms  openat(dfd=-100, pathname=&quot;/usr/lib/locale/locale-archive&quot;, flags=0x80000)
+  3415 ms  openat(dfd=-100, pathname=&quot;.&quot;, flags=0x90800)
+Process terminated</code></pre>
+<h3>What just happened:</h3>
+<ol><li>Frida <strong>spawned</strong> <code>/bin/ls</code></li><li><strong>Injected</strong> its agent into the process</li><li><strong>Hooked</strong> the <code>openat</code> function in libc</li><li><strong>Logged</strong> every call with arguments</li><li>Process exited normally</li></ol>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>First Test: frida-trace on strcmp</h2>
+<p>Remember our password checker from Module 4? Let's trace it with Frida:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ frida-trace -i &quot;strcmp&quot; ./password_checker</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>Instrumenting...
+strcmp: Auto-generated handler at &quot;__handlers__/libc.so.6/strcmp.js&quot;
+Started tracing 1 function. Press Ctrl+C to stop.
+Enter the secret code: wrongpassword
+  2847 ms  strcmp()
+Wrong code! Access denied.
+Process terminated</code></pre>
+<h3>But wait - frida-trace shows <code>strcmp()</code> without the arguments!</h3>
+<p>That is because the auto-generated handler is minimal. Let's <strong>edit it</strong>:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ cat __handlers__/libc.so.6/strcmp.js</code></pre>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>{
+  onEnter(log, args, state) {
+    log(&#x27;strcmp()&#x27;);
+  },
+  onLeave(log, retval, state) {
+  }
+}</code></pre>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Customizing frida-trace Handlers</h2>
+<p>Edit the auto-generated handler to show arguments:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// __handlers__/libc.so.6/strcmp.js
+{
+  onEnter(log, args, state) {
+    log(&#x27;strcmp(&quot;&#x27; + args[0].readUtf8String() + &#x27;&quot;, &quot;&#x27; +
+        args[1].readUtf8String() + &#x27;&quot;)&#x27;);
+  },
+  onLeave(log, retval, state) {
+    log(&#x27;  =&gt; &#x27; + retval);
+  }
+}</code></pre>
+<h3>Run again:</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ frida-trace -i &quot;strcmp&quot; ./password_checker</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>Enter the secret code: wrongpassword
+  2891 ms  strcmp(&quot;wrongpassword&quot;, &quot;LUG_h4ck3r_2024&quot;)
+  2891 ms    =&gt; 0xb
+Wrong code! Access denied.
+Process terminated</code></pre>
+<p><strong>Now we can see the arguments AND the return value</strong> - just like ltrace, but with full control to modify things.</p>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>The Frida REPL</h2>
+<p>The <strong>frida</strong> command gives you an interactive JavaScript console inside the target process:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Spawn a process and get a REPL
+$ frida ./password_checker</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>     ____
+    / _  |   Frida 16.5.6 - A world-class dynamic instrumentation toolkit
+   | (_| |
+    &gt; _  |   Commands:
+   /_/ |_|       help      -&gt; Displays the help system
+   . . . .       object?   -&gt; Display information about &#x27;object&#x27;
+   . . . .       exit/quit -&gt; Exit
+   . . . .
+   . . . .   More info at https://frida.re/docs/home/
+   . . . .
+   . . . .   Connected to Local System (id=local)
+   . . . .   Spawned `./password_checker`. Use %resume to let the main
+   . . . .   thread start executing!
+
+[Local::password_checker ]-&gt;</code></pre>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>The Frida REPL (cont.)</h2>
+<h3>Try some commands:</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// List loaded modules (shared libraries)
+Process.enumerateModules()
+
+// Find the address of strcmp
+Module.getGlobalExportByName(&quot;strcmp&quot;)
+// =&gt; &quot;0x7f1a2b3c4d50&quot;
+
+// Resume the process
+%resume</code></pre>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Frida REPL: Exploring a Process</h2>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// List all loaded modules (libraries)
+[Local::password_checker ]-&gt; Process.enumerateModules()
+[
+  { &quot;name&quot;: &quot;password_checker&quot;, &quot;base&quot;: &quot;0x5555555540000&quot;, &quot;size&quot;: 16384 },
+  { &quot;name&quot;: &quot;libc.so.6&quot;, &quot;base&quot;: &quot;0x7f1a2b300000&quot;, &quot;size&quot;: 2097152 },
+  { &quot;name&quot;: &quot;ld-linux-x86-64.so.2&quot;, &quot;base&quot;: &quot;0x7f1a2b500000&quot;, &quot;size&quot;: 245760 }
+]
+
+// Find exports of libc
+[Local::password_checker ]-&gt; Module.enumerateExports(&quot;libc.so.6&quot;).slice(0, 5)
+[
+  { &quot;type&quot;: &quot;function&quot;, &quot;name&quot;: &quot;strcmp&quot;, &quot;address&quot;: &quot;0x7f1a2b3c4d50&quot; },
+  { &quot;type&quot;: &quot;function&quot;, &quot;name&quot;: &quot;strlen&quot;, &quot;address&quot;: &quot;0x7f1a2b3c5e60&quot; },
+  { &quot;type&quot;: &quot;function&quot;, &quot;name&quot;: &quot;printf&quot;, &quot;address&quot;: &quot;0x7f1a2b3a1230&quot; },
+  { &quot;type&quot;: &quot;function&quot;, &quot;name&quot;: &quot;malloc&quot;, &quot;address&quot;: &quot;0x7f1a2b3b5a00&quot; },
+  { &quot;type&quot;: &quot;function&quot;, &quot;name&quot;: &quot;free&quot;, &quot;address&quot;: &quot;0x7f1a2b3b5c10&quot; }
+]
+
+// Read a string from memory
+[Local::password_checker ]-&gt; ptr(&quot;0x555555556004&quot;).readUtf8String()
+&quot;Enter the secret code: &quot;</code></pre>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Troubleshooting: Common Issues</h2>
+<h3>1. "pip install frida-tools" fails</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Error: externally-managed-environment (PEP 668, common on newer distros)
+# Solution: use a virtual environment
+$ python3 -m venv ~/frida-env
+$ source ~/frida-env/bin/activate
+(frida-env) $ pip install frida-tools</code></pre>
+<h3>2. "Failed to attach: unexpected error" / Permission denied</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Check ptrace_scope
+$ cat /proc/sys/kernel/yama/ptrace_scope
+1  # &lt;-- This is the problem
+
+# Fix it
+$ echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope</code></pre>
+<h3>3. "frida: command not found"</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># pip installed to ~/.local/bin, which is not in PATH
+$ export PATH=&quot;$HOME/.local/bin:$PATH&quot;
+
+# Make it permanent
+$ echo &#x27;export PATH=&quot;$HOME/.local/bin:$PATH&quot;&#x27; &gt;&gt; ~/.bashrc</code></pre>
+<p>Hit another issue? Ask the presenter.</p>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Workshop Setup</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ git clone https://github.com/f0rw4rd/frida-workshop.git
+$ cd frida-workshop
+$ ./setup.sh</code></pre>
+<p>The script installs <code>frida-tools</code>, sets <code>ptrace_scope=0</code>, and builds the exercise binaries.</p>
+<p>If it fails, see the Troubleshooting slide - or ask.</p>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>What We Have Now vs What's Next</h2>
+<h3>Our toolkit so far:</h3>
+<table>
+<thead><tr>
+<th>Tool</th>
+<th>Can observe?</th>
+<th>Can modify?</th>
+<th>Ease of use</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>strings</code></td>
+<td>Yes (static)</td>
+<td>No</td>
+<td>Very easy</td>
+</tr>
+<tr>
+<td><code>file</code> / <code>readelf</code></td>
+<td>Yes (metadata)</td>
+<td>No</td>
+<td>Easy</td>
+</tr>
+<tr>
+<td><code>strace</code></td>
+<td>Yes (syscalls)</td>
+<td>No</td>
+<td>Easy</td>
+</tr>
+<tr>
+<td><code>ltrace</code></td>
+<td>Yes (lib calls)</td>
+<td>No</td>
+<td>Easy</td>
+</tr>
+<tr>
+<td><strong>Frida</strong></td>
+<td><strong>Yes</strong></td>
+<td><strong>Yes</strong></td>
+<td>Moderate</td>
+</tr>
+</tbody>
+</table>
+<h3>Coming up in the next modules:</h3>
+<ul><li><strong>Module 6:</strong> Frida JavaScript API deep-dive
+<ul><li><code>Interceptor.attach()</code> - hook any function</li><li>Reading and writing memory</li><li>Modifying arguments and return values</li></ul></li><li><strong>Module 7:</strong> Practical exercises
+<ul><li>Bypass the password checker by hooking <code>strcmp</code></li><li>Bypass a license check by hooking the validation function</li><li>Trace encryption calls to extract keys</li></ul></li></ul>
+            </section>
+
+            <section data-module="05-frida-install">
+                <h2>Summary</h2>
+<h3>What we installed:</h3>
+<ul><li><strong>frida-tools</strong> via pip (frida, frida-trace, frida-ps, etc.)</li><li>Set <strong>ptrace_scope=0</strong> for unrestricted process attachment</li></ul>
+<h3>What we learned:</h3>
+<ul><li>Frida's architecture: <strong>Client</strong> <-> <strong>Agent</strong> (injected) <-> <strong>Gum</strong> (native engine)</li><li>On Linux, Frida uses <strong>ptrace</strong> for initial injection, then IPC for communication</li><li><strong>frida-trace</strong> auto-generates hook handlers for any function</li><li><strong>frida</strong> REPL lets you interactively explore a running process</li><li>We can already <strong>see</strong> function calls and arguments (like ltrace), and soon we will <strong>modify</strong> them</li></ul>
+<h3>Key commands to remember:</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>frida-ps                            # List processes
+frida-trace -i &quot;func&quot; ./program     # Trace a function
+frida ./program                     # Interactive REPL
+frida -p PID -l script.js           # Attach with a script</code></pre>
+<h3>Next: Writing our first Frida scripts to bypass password checks!</h3>
+            </section>
+
+            <section class="module-title" data-module="06-frida-basics">
+                <h1>Frida Basics and First Hooks</h1>
+<h3>From observer to interceptor</h3>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Frida's Two Modes of Operation</h2>
+<p>Frida can attach to a running process <strong>or</strong> spawn a new one under its control.</p>
+<h3>Spawn mode - start a process under Frida's supervision</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>frida -f ./binary</code></pre>
+<ul><li>Frida spawns the process <strong>paused</strong> (before <code>main()</code> runs)</li><li>You get a chance to set up hooks before any code executes</li><li>Use <code>%resume</code> in the REPL (or <code>--no-pause</code>) to continue execution</li></ul>
+<h3>Attach mode - hook into something already running</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>frida -p 1234          # attach by PID
+frida process_name     # attach by name</code></pre>
+<ul><li>Process is already running - you may miss early initialization</li><li>Useful for long-running services, daemons, GUI applications</li></ul>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Spawn vs Attach: When to Use Which</h2>
+<table>
+<thead><tr>
+<th></th>
+<th>Spawn (<code>-f</code>)</th>
+<th>Attach (<code>-p</code> / name)</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Timing</strong></td>
+<td>Before <code>main()</code></td>
+<td>Mid-execution</td>
+</tr>
+<tr>
+<td><strong>Use case</strong></td>
+<td>Short-lived binaries, CTFs</td>
+<td>Services, daemons, GUIs</td>
+</tr>
+<tr>
+<td><strong>Hook coverage</strong></td>
+<td>Full - nothing runs before you</td>
+<td>Partial - early code already ran</td>
+</tr>
+<tr>
+<td><strong>Example</strong></td>
+<td><code>frida -f ./crackme</code></td>
+<td><code>frida nginx</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rule of thumb:</strong> If you control when the process starts, use spawn. If it is already running (or must stay running), use attach.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>The Frida REPL</h2>
+<p>When you attach or spawn, Frida drops you into an <strong>interactive JavaScript console</strong> that runs <em>inside the target process</em>.</p>
+<pre><code class="nohighlight" data-trim data-noescape>     ____
+    / _  |   Frida 16.x.x - A world-class dynamic instrumentation toolkit
+   | (_| |
+    &gt; _  |   Commands:
+   /_/ |_|       help      -&gt; Displays the help system
+   . . . .       object?   -&gt; Display information about &#x27;object&#x27;
+   . . . .       exit/quit -&gt; Exit
+   . . . .
+   . . . .   More info at https://frida.re/docs/home/
+
+[Local::./ex01_password_check ]-&gt;</code></pre>
+<p>Everything you type here executes as JavaScript <strong>in the target's address space</strong>.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Key Concepts: The Frida API</h2>
+<p>Four pillars you will use constantly:</p>
+<h3><code>Process</code></h3>
+<p>Information about the running process - PID, architecture, modules, threads.</p>
+<h3><code>Module</code></h3>
+<p>Inspect loaded shared libraries - find exports, base addresses, symbols.</p>
+<h3><code>Memory</code></h3>
+<p>Read and write raw bytes in the target's address space.</p>
+<h3><code>Interceptor</code></h3>
+<p>The hook engine - intercept function calls, read arguments, modify return values.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>First Hook: frida-trace</h2>
+<p><code>frida-trace</code> is the fastest way to start intercepting function calls. No scripting required - just tell it what to trace.</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Trace all calls to strcmp in our password checker
+frida-trace -f ./ex01_password_check -i &quot;strcmp&quot;</code></pre>
+<p>Output:</p>
+<pre><code class="nohighlight" data-trim data-noescape>Instrumenting...
+strcmp: Auto-generated handler at
+  &quot;__handlers__/libc.so.6/strcmp.js&quot;
+Started tracing 1 function.
+           /* TID 0x1a3f */
+  3245 ms  strcmp()</code></pre>
+<p>The <code>-i</code> flag matches <strong>exported function names</strong> (supports wildcards: <code>-i &quot;str*&quot;</code>).</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>frida-trace: Auto-Generated Handlers</h2>
+<p>frida-trace creates JavaScript handler files you can inspect and edit:</p>
+<pre><code class="nohighlight" data-trim data-noescape>__handlers__/
+  libc.so.6/
+    strcmp.js</code></pre>
+<p>Default generated handler:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// __handlers__/libc.so.6/strcmp.js
+{
+  onEnter(log, args, state) {
+    log(&#x27;strcmp()&#x27;);
+  },
+
+  onLeave(log, retval, state) {
+  }
+}</code></pre>
+<p>This is a <strong>live file</strong> - edit it and frida-trace will hot-reload your changes.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Customizing frida-trace Handlers</h2>
+<p>Edit <code>&lt;strong&gt;handlers&lt;/strong&gt;/libc.so.6/strcmp.js</code> to print the actual arguments:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>{
+  onEnter(log, args, state) {
+    // args[0] and args[1] are NativePointer objects
+    // .readUtf8String() dereferences the pointer and reads a C string
+    var s1 = args[0].readUtf8String();
+    var s2 = args[1].readUtf8String();
+    log(&#x27;strcmp(&quot;&#x27; + s1 + &#x27;&quot;, &quot;&#x27; + s2 + &#x27;&quot;)&#x27;);
+  },
+
+  onLeave(log, retval, state) {
+    log(&#x27;  =&gt; returned &#x27; + retval.toInt32());
+  }
+}</code></pre>
+<p>Save the file. frida-trace detects the change and reloads automatically.</p>
+<p>Now every <code>strcmp</code> call shows you <strong>what</strong> is being compared.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>frida-trace: Seeing Secrets</h2>
+<p>After editing the handler, restart the trace:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>frida-trace -f ./ex01_password_check -i &quot;strcmp&quot;</code></pre>
+<p>When the binary asks for a password and you type "hello":</p>
+<pre><code class="nohighlight" data-trim data-noescape>  1042 ms  strcmp(&quot;hello&quot;, &quot;Sup3rS3cr3t!&quot;)
+             =&gt; returned -1</code></pre>
+<p>The secret password is right there: <strong><code>Sup3rS3cr3t!</code></strong></p>
+<p>The binary compared our input against the hardcoded password using <code>strcmp</code>. Frida let us watch it happen in real time.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Module Exploration in the REPL</h2>
+<p>Attach to a process and explore what is loaded:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// List all loaded modules (shared libraries + the binary itself)
+Process.enumerateModules()
+// =&gt; [{name: &quot;ex01_password_check&quot;, base: &quot;0x55a000&quot;, size: 16384, path: &quot;/home/...&quot;},
+//     {name: &quot;libc.so.6&quot;, base: &quot;0x7f3a00&quot;, size: 2097152, path: &quot;/usr/lib/...&quot;},
+//     ...]</code></pre>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Find the address of a specific exported function
+Module.getGlobalExportByName(&quot;strcmp&quot;)
+// =&gt; &quot;0x7f3a001b2f0&quot;
+// searches all loaded modules for the export</code></pre>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Enumerate exports and filter for string-related functions
+Module.enumerateExports(&quot;libc.so.6&quot;)
+    .filter(e =&gt; e.name.includes(&quot;str&quot;))
+// =&gt; [{type: &quot;function&quot;, name: &quot;strcmp&quot;, address: &quot;0x7f3a...&quot;},
+//     {type: &quot;function&quot;, name: &quot;strcpy&quot;, address: &quot;0x7f3a...&quot;},
+//     {type: &quot;function&quot;, name: &quot;strlen&quot;, address: &quot;0x7f3a...&quot;},
+//     ...]</code></pre>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>More Module Exploration</h2>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Find the base address of the main binary
+Process.enumerateModules()[0]
+// =&gt; {name: &quot;ex01_password_check&quot;, base: &quot;0x5555555000&quot;, size: 16384, ...}
+
+// Or find it by name
+Process.findModuleByName(&quot;ex01_password_check&quot;).base
+// =&gt; &quot;0x5555555000&quot;</code></pre>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// List imports - what functions does the binary pull from shared libs?
+Module.enumerateImports(&quot;ex01_password_check&quot;)
+// =&gt; [{type: &quot;function&quot;, name: &quot;strcmp&quot;, module: &quot;libc.so.6&quot;, address: &quot;0x7f...&quot;},
+//     {type: &quot;function&quot;, name: &quot;printf&quot;, module: &quot;libc.so.6&quot;, address: &quot;0x7f...&quot;},
+//     {type: &quot;function&quot;, name: &quot;puts&quot;,   module: &quot;libc.so.6&quot;, address: &quot;0x7f...&quot;},
+//     ...]</code></pre>
+<p>This gives you a <strong>map</strong> of the binary's external dependencies without touching a disassembler.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Your First Interceptor.attach()</h2>
+<p><code>Interceptor.attach()</code> is the core hooking API. Paste this into the REPL:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        console.log(&quot;strcmp(&quot;,
+            args[0].readUtf8String(),
+            &quot;,&quot;,
+            args[1].readUtf8String(),
+            &quot;)&quot;);
+    }
+});</code></pre>
+<ul><li><code>Module.getGlobalExportByName(&quot;strcmp&quot;)</code> - resolves the address of <code>strcmp</code></li><li><code>onEnter(args)</code> - called <strong>every time</strong> <code>strcmp</code> is entered</li><li><code>args[0]</code>, <code>args[1]</code> - <code>NativePointer</code> objects pointing to the function arguments</li></ul>
+<p>This is the <strong>programmatic equivalent</strong> of what frida-trace does, but now you have full control.</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// You can also intercept the return:
+Interceptor.attach(target, {
+    onEnter(args) { /* called when function starts */ },
+    onLeave(retval) {
+        console.log(&quot;returned:&quot;, retval.toInt32());
+    }
+});</code></pre>
+<p>We'll use <code>onLeave</code> extensively in Module 7 to modify return values.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Reading Function Arguments</h2>
+<p>Every <code>args[N]</code> is a <strong>NativePointer</strong> - Frida's wrapper around a raw memory address. You call methods on it to read what it points to.</p>
+<p>You convert it depending on the argument type:</p>
+<h3>Strings (char *)</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>args[0].readUtf8String()       // Read a null-terminated UTF-8 string
+args[0].readCString()          // Read a null-terminated C string
+args[0].readUtf8String(16)     // Read at most 16 bytes</code></pre>
+<h3>Integers</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>args[0].toInt32()              // Signed 32-bit integer
+args[0].toUInt32()             // Unsigned 32-bit integer</code></pre>
+<h3>Pointers / addresses</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>args[0]                        // Already a NativePointer - prints as hex
+args[0].readPointer()          // Dereference: read the pointer it points to</code></pre>
+<h3>Raw bytes</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// hexdump() - built-in Frida utility for hex+ASCII memory dumps
+console.log(hexdump(args[0], { length: 64 }))
+// Options: length, offset, header (bool), ansi (bool for colors)</code></pre>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Matching Arguments to the C Prototype</h2>
+<p>Always think about the C function signature:</p>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// man strcmp
+int strcmp(const char *s1, const char *s2);</code></pre>
+<table>
+<thead><tr>
+<th>C parameter</th>
+<th>Frida argument</th>
+<th>How to read</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>const char *s1</code></td>
+<td><code>args[0]</code></td>
+<td><code>args[0].readUtf8String()</code></td>
+</tr>
+<tr>
+<td><code>const char *s2</code></td>
+<td><code>args[1]</code></td>
+<td><code>args[1].readUtf8String()</code></td>
+</tr>
+<tr>
+<td>return <code>int</code></td>
+<td><code>retval</code> (in onLeave)</td>
+<td><code>retval.toInt32()</code></td>
+</tr>
+</tbody>
+</table>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// man open
+int open(const char *pathname, int flags);</code></pre>
+<table>
+<thead><tr>
+<th>C parameter</th>
+<th>Frida argument</th>
+<th>How to read</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>const char *pathname</code></td>
+<td><code>args[0]</code></td>
+<td><code>args[0].readUtf8String()</code></td>
+</tr>
+<tr>
+<td><code>int flags</code></td>
+<td><code>args[1]</code></td>
+<td><code>args[1].toInt32()</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>calling convention</strong> and architecture determine how args map. On x86_64 Linux: <code>args[0]</code> = RDI, <code>args[1]</code> = RSI, <code>args[2]</code> = RDX, ...</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Hooking Multiple Functions</h2>
+<p>You can set up as many hooks as you want:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Hook strcmp
+Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        console.log(&quot;[strcmp]&quot;, args[0].readUtf8String(),
+                     &quot;vs&quot;, args[1].readUtf8String());
+    }
+});
+
+// Hook puts - see what the program prints
+Interceptor.attach(Module.getGlobalExportByName(&quot;puts&quot;), {
+    onEnter(args) {
+        console.log(&quot;[puts]&quot;, args[0].readUtf8String());
+    }
+});
+
+// Hook open - see what files it accesses
+Interceptor.attach(Module.getGlobalExportByName(&quot;open&quot;), {
+    onEnter(args) {
+        console.log(&quot;[open]&quot;, args[0].readUtf8String(),
+                     &quot;flags:&quot;, args[1].toInt32());
+    }
+});</code></pre>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Practical Tips</h2>
+<h3>Avoid crashing the target</h3>
+<p>Some pointers may be invalid. Guard your reads:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        try {
+            console.log(&quot;strcmp:&quot;, args[0].readUtf8String(),
+                         &quot;vs&quot;, args[1].readUtf8String());
+        } catch (e) {
+            console.log(&quot;strcmp: &lt;couldn&#x27;t read args&gt;&quot;);
+        }
+    }
+});</code></pre>
+<h3>Filtering noise</h3>
+<p>libc functions get called thousands of times. Filter to what matters:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>onEnter(args) {
+    var s = args[0].readUtf8String();
+    if (s &amp;&amp; s.includes(&quot;password&quot;)) {
+        console.log(&quot;Interesting strcmp:&quot;, s, &quot;vs&quot;, args[1].readUtf8String());
+    }
+}</code></pre>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Quick Reference: Common frida-trace Patterns</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Trace a single function
+frida-trace -f ./binary -i &quot;strcmp&quot;
+
+# Trace all string functions
+frida-trace -f ./binary -i &quot;str*&quot;
+
+# Trace file operations
+frida-trace -f ./binary -i &quot;open&quot; -i &quot;read&quot; -i &quot;write&quot; -i &quot;close&quot;
+
+# Trace functions in a specific library
+frida-trace -f ./binary -I &quot;libcrypto*&quot;
+
+# Trace by address (for non-exported functions)
+frida-trace -f ./binary -a &quot;binary!0x1234&quot;
+
+# Attach to a running process
+frida-trace -p $(pidof target) -i &quot;strcmp&quot;</code></pre>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Exercise: Find the Password (15 min)</h2>
+<p><strong>Target:</strong> <code>exercises/bin/ex01_password_check</code> <strong>Goal:</strong> Use frida-trace and Interceptor.attach to discover the hardcoded password - without reading the source code.</p>
+<p><strong>What you will practice:</strong></p>
+<ul><li>Running <code>frida-trace</code> with function filters</li><li>Editing auto-generated handler files</li><li>Reading function arguments at runtime</li></ul>
+<p>See <strong><code>exercises/ex03-frida-first-hook.md</code></strong> for step-by-step instructions and solution.</p>
+            </section>
+
+            <section data-module="06-frida-basics">
+                <h2>Recap</h2>
+<table>
+<thead><tr>
+<th>Concept</th>
+<th>What It Does</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>frida -f ./bin</code></td>
+<td>Spawn a process under Frida</td>
+</tr>
+<tr>
+<td><code>frida -p PID</code></td>
+<td>Attach to a running process</td>
+</tr>
+<tr>
+<td><code>frida-trace -i &quot;func&quot;</code></td>
+<td>Quick function tracing with auto-generated handlers</td>
+</tr>
+<tr>
+<td><code>Process.enumerateModules()</code></td>
+<td>List loaded libraries</td>
+</tr>
+<tr>
+<td><code>Module.getGlobalExportByName()</code></td>
+<td>Resolve a function's address across all modules</td>
+</tr>
+<tr>
+<td><code>Interceptor.attach()</code></td>
+<td>Hook a function - read args on entry</td>
+</tr>
+<tr>
+<td><code>args[N].readUtf8String()</code></td>
+<td>Read a C string argument</td>
+</tr>
+<tr>
+<td><code>args[N].toInt32()</code></td>
+<td>Read an integer argument</td>
+</tr>
+</tbody>
+</table>
+<h3>Next up: Modifying behavior - not just watching, but <em>changing</em> what functions return.</h3>
+            </section>
+
+            <section class="module-title" data-module="07-frida-scripting">
+                <h1>Frida Scripting</h1>
+<h2>Modifying Behavior</h2>
+<h3>From observation to manipulation</h3>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Loading Scripts from Files</h2>
+<p>So far: typing into the REPL. For real work, use <strong>script files</strong>.</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Spawn the binary and load a script
+frida -f ./binary -l script.js --no-pause
+
+# Attach to a running process with a script
+frida -p 1234 -l script.js
+
+# By name
+frida process_name -l script.js</code></pre>
+<p><code>--no-pause</code> automatically resumes the process after loading the script. Without it, the process stays paused and you must type <code>%resume</code>.</p>
+<p>Your script is a plain <code>.js</code> file - no special boilerplate required.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Script Structure and Lifecycle</h2>
+<p>A Frida script is just JavaScript that runs inside the target process:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// script.js
+
+// 1. Setup phase - runs immediately when the script is loaded
+console.log(&quot;[*] Script loaded. PID:&quot;, Process.id);
+
+// 2. Hook installation - set up your interceptors
+Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        console.log(&quot;[strcmp]&quot;, args[0].readUtf8String(),
+                     &quot;vs&quot;, args[1].readUtf8String());
+    }
+});
+
+// 3. The script stays resident - hooks fire as the process runs
+console.log(&quot;[*] Hooks installed. Waiting for calls...&quot;);</code></pre>
+<p>Key points:</p>
+<ul><li>Code runs <strong>top to bottom</strong> when loaded</li><li>Hooks persist until the script is unloaded or the process exits</li><li><code>console.log()</code> output appears in your terminal</li></ul>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Interceptor.attach: onEnter and onLeave</h2>
+<p>Every <code>Interceptor.attach()</code> can have two callbacks:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(targetAddress, {
+    // Called BEFORE the function body executes
+    onEnter(args) {
+        // args[0], args[1], ... are the function&#x27;s parameters
+    },
+
+    // Called AFTER the function returns
+    onLeave(retval) {
+        // retval is the return value (NativePointer)
+    }
+});</code></pre>
+<p><code>onEnter</code> sees what <strong>goes in</strong>. <code>onLeave</code> sees what <strong>comes out</strong>.</p>
+<p>And here is the critical part: in <code>onLeave</code>, you can <strong>change</strong> the return value.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Sharing Data Between onEnter and onLeave</h2>
+<p>Use <code>this</code> to pass data from <code>onEnter</code> to <code>onLeave</code>:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        // Save arguments for use in onLeave
+        this.s1 = args[0].readUtf8String();
+        this.s2 = args[1].readUtf8String();
+        console.log(`strcmp(&quot;${this.s1}&quot;, &quot;${this.s2}&quot;)`);
+    },
+    onLeave(retval) {
+        // this.s1 and this.s2 are available here
+        console.log(`  =&gt; returned ${retval.toInt32()}`);
+        console.log(`  (was comparing: &quot;${this.s1}&quot; vs &quot;${this.s2}&quot;)`);
+    }
+});</code></pre>
+<p><code>this</code> is an <strong>invocation context</strong> - unique per call, so concurrent calls do not interfere with each other.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>The Power Move: Replacing Return Values</h2>
+<p><code>retval.replace()</code> changes the return value <strong>before the caller sees it</strong>.</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        this.s1 = args[0].readUtf8String();
+        this.s2 = args[1].readUtf8String();
+        console.log(`strcmp(&quot;${this.s1}&quot;, &quot;${this.s2}&quot;)`);
+    },
+    onLeave(retval) {
+        retval.replace(0);  // Force strcmp to return 0 (strings match)
+        console.log(&quot;  =&gt; forced return 0 (match)&quot;);
+    }
+});</code></pre>
+<p><code>strcmp</code> returns <code>0</code> when strings are <strong>equal</strong>.</p>
+<p>By forcing the return value to <code>0</code>, we make the program think <strong>every string comparison succeeds</strong> - no matter what the user typed.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>The "Aha" Moment</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>$ frida -f exercises/bin/ex01_password_check -l bypass.js --no-pause</code></pre>
+<pre><code class="nohighlight" data-trim data-noescape>Enter password: i_have_no_idea
+strcmp(&quot;i_have_no_idea&quot;, &quot;Sup3rS3cr3t!&quot;)
+  =&gt; forced return 0 (match)
+Access granted! Welcome!</code></pre>
+<p>We bypassed the password check <strong>without knowing the password</strong>.</p>
+<p>This is the fundamental shift:</p>
+<ul><li><strong>Static analysis</strong> tells you what code <em>says</em></li><li><strong>Dynamic instrumentation</strong> lets you change what code <em>does</em></li></ul>
+<p>We did not patch the binary. We did not modify any file on disk. We intercepted a function call in flight and rewrote reality.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Being Selective with Hooks</h2>
+<p>Forcing <em>all</em> strcmp calls to return 0 is a sledgehammer. Be surgical when needed:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        this.s1 = args[0].readUtf8String();
+        this.s2 = args[1].readUtf8String();
+
+        // Only tamper when we see the password check
+        this.shouldBypass = this.s2 === &quot;Sup3rS3cr3t!&quot;;
+
+        if (this.shouldBypass) {
+            console.log(`[!] Password check detected: &quot;${this.s1}&quot; vs &quot;${this.s2}&quot;`);
+        }
+    },
+    onLeave(retval) {
+        if (this.shouldBypass) {
+            retval.replace(0);
+            console.log(&quot;[!] Bypassed!&quot;);
+        }
+        // All other strcmp calls proceed normally
+    }
+});</code></pre>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Memory Operations: Reading Raw Bytes</h2>
+<h3>hexdump - inspect memory visually</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>var addr = Module.getGlobalExportByName(&quot;strcmp&quot;);
+console.log(hexdump(addr, {
+    offset: 0,
+    length: 64,
+    header: true,
+    ansi: true
+}));</code></pre>
+<p>Output:</p>
+<pre><code class="nohighlight" data-trim data-noescape>           0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0123456789ABCDEF
+00000000  f3 0f 1e fa 48 89 f8 48 89 f1 48 83 e0 3f 48 83  ....H..H..H..?H.
+00000010  f8 30 77 1b 48 83 e1 3f 48 83 f9 30 77 11 eb 14  .0w.H..?H..0w...</code></pre>
+<h3>NativePointer.readByteArray - read raw bytes</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>var buf = addr.readByteArray(32);
+console.log(buf);  // ArrayBuffer with 32 bytes</code></pre>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Memory Operations: Allocating and Writing</h2>
+<h3>Allocate a new string in the target's memory</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>var greeting = Memory.allocUtf8String(&quot;Hello from Frida!&quot;);
+console.log(greeting);                  // NativePointer address
+console.log(greeting.readUtf8String()); // &quot;Hello from Frida!&quot;</code></pre>
+<h3>Scan memory for byte patterns</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Search for the string &quot;password&quot; in the main module
+var mod = Process.enumerateModules()[0];
+var matches = Memory.scanSync(mod.base, mod.size, &quot;70 61 73 73 77 6f 72 64&quot;);
+for (var m of matches) {
+    console.log(&quot;[*] Found &#x27;password&#x27; at:&quot;, m.address);
+    console.log(&quot;    Context:&quot;, m.address.readUtf8String());
+}
+console.log(&quot;[*] Scan complete. Found&quot;, matches.length, &quot;matches.&quot;);</code></pre>
+<p>The pattern is hex bytes. You can use <code>??</code> as wildcards: <code>&quot;48 8b ?? 10&quot;</code>.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>NativeFunction: Calling Native Code from JavaScript</h2>
+<p>Create a JavaScript wrapper around any native function:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Signature: int puts(const char *s);
+const puts = new NativeFunction(
+    Module.getGlobalExportByName(&quot;puts&quot;),
+    &#x27;int&#x27;,           // return type
+    [&#x27;pointer&#x27;]      // argument types
+);
+
+// Now call it - inject our own output into the target process!
+var msg = Memory.allocUtf8String(&quot;Hello from Frida!&quot;);
+puts(msg);</code></pre>
+<p>This calls the <strong>real</strong> <code>puts</code> inside the target process. The text appears in the target's stdout.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>NativeFunction: More Examples</h2>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// int printf(const char *format, ...);
+const printf = new NativeFunction(
+    Module.getGlobalExportByName(&quot;printf&quot;),
+    &#x27;int&#x27;,
+    [&#x27;pointer&#x27;, &#x27;...&#x27;, &#x27;int&#x27;, &#x27;pointer&#x27;]  // variadic args
+);
+
+// void *malloc(size_t size);
+const malloc = new NativeFunction(
+    Module.getGlobalExportByName(&quot;malloc&quot;),
+    &#x27;pointer&#x27;,
+    [&#x27;size_t&#x27;]
+);
+
+// void free(void *ptr);
+const free = new NativeFunction(
+    Module.getGlobalExportByName(&quot;free&quot;),
+    &#x27;void&#x27;,
+    [&#x27;pointer&#x27;]
+);
+
+// Allocate memory the &quot;real&quot; way
+var buf = malloc(256);
+console.log(&quot;Allocated buffer at:&quot;, buf);
+free(buf);</code></pre>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Interceptor.replace: Full Function Replacement</h2>
+<p>Replace a function's <strong>entire implementation</strong>:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Original: int check_license(const char *key)
+// Returns 1 for valid, 0 for invalid
+
+const check_license = Module.getGlobalExportByName(&quot;check_license&quot;);
+
+Interceptor.replace(check_license,
+    new NativeCallback(function (keyPtr) {
+        var key = keyPtr.readUtf8String();
+        console.log(&quot;[*] check_license called with:&quot;, key);
+        console.log(&quot;[*] Returning 1 (valid) regardless&quot;);
+        return 1;  // Always valid!
+    }, &#x27;int&#x27;, [&#x27;pointer&#x27;])
+);</code></pre>
+<ul><li><code>Interceptor.attach</code> = wrap the original (it still runs)</li><li><code>Interceptor.replace</code> = <strong>substitute</strong> the original (it never runs)</li></ul>
+<p>Use <code>replace</code> when you want to completely redefine behavior.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>The Message API: send() and recv()</h2>
+<p>For complex tools, your Frida script can communicate with a <strong>Python</strong> host:</p>
+<h3>JavaScript side (inside the target):</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Send data to the Python script
+Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        send({
+            type: &quot;strcmp&quot;,
+            s1: args[0].readUtf8String(),
+            s2: args[1].readUtf8String()
+        });
+    }
+});</code></pre>
+<h3>Python side (on your machine):</h3>
+<pre data-lang="python"><code class="language-python" data-trim data-noescape>def on_message(message, data):
+    if message[&#x27;type&#x27;] == &#x27;send&#x27;:
+        payload = message[&#x27;payload&#x27;]
+        print(f&quot;strcmp: {payload[&#x27;s1&#x27;]} vs {payload[&#x27;s2&#x27;]}&quot;)
+
+script.on(&#x27;message&#x27;, on_message)</code></pre>
+<p>This separation lets you do heavy processing in Python while keeping the in-process hook lightweight.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Backtraces: Who Called This Function?</h2>
+<p><code>Thread.backtrace()</code> shows the <strong>call chain</strong> that led to the current function:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        console.log(&quot;strcmp called from:&quot;);
+        console.log(
+            Thread.backtrace(this.context, Backtracer.ACCURATE)
+                .map(DebugSymbol.fromAddress)
+                .join(&quot;\n  &quot;)
+        );
+    }
+});</code></pre>
+<p>Output:</p>
+<pre><code class="nohighlight" data-trim data-noescape>strcmp called from:
+  0x5555555551a3 ex01_password_check!check_password+0x23
+  0x555555555210 ex01_password_check!main+0x40
+  0x7ffff7c29d90 libc.so.6!__libc_start_call_main+0x80</code></pre>
+<p>Invaluable for understanding <strong>where</strong> a function is called from, especially in large binaries.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Backtraces: Practical Use Cases</h2>
+<h3>"Why is this file being opened?"</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;open&quot;), {
+    onEnter(args) {
+        var path = args[0].readUtf8String();
+        if (path.includes(&quot;.conf&quot;) || path.includes(&quot;license&quot;)) {
+            console.log(&quot;\n[*] Interesting open:&quot;, path);
+            console.log(&quot;    Called from:&quot;);
+            console.log(&quot;   &quot;,
+                Thread.backtrace(this.context, Backtracer.ACCURATE)
+                    .map(DebugSymbol.fromAddress)
+                    .join(&quot;\n    &quot;)
+            );
+        }
+    }
+});</code></pre>
+<p>This tells you <strong>which function</strong> in the binary is responsible for reading a particular file - without reading a single line of disassembly.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Modifying Function Arguments</h2>
+<p>You can change arguments <strong>before</strong> the function sees them:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;open&quot;), {
+    onEnter(args) {
+        var path = args[0].readUtf8String();
+        if (path === &quot;/etc/license.dat&quot;) {
+            // Redirect to our fake license file
+            var fakePath = Memory.allocUtf8String(&quot;/tmp/fake_license.dat&quot;);
+            args[0] = fakePath;
+            console.log(&quot;[*] Redirected open: /etc/license.dat -&gt; /tmp/fake_license.dat&quot;);
+        }
+    }
+});</code></pre>
+<p>The function receives <strong>our modified argument</strong> and has no idea.</p>
+<p>Useful for:</p>
+<ul><li>Redirecting file access</li><li>Changing network destinations</li><li>Injecting custom data</li></ul>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Complete Example Scripts</h2>
+<p>Each exercise has a full solution in <code>exercises/solutions/</code>. Here are the key patterns:</p>
+<h3>ex04_bypass_password.js - Force strcmp to match</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        try { this.s1 = args[0].readUtf8String(); } catch(e) { this.s1 = null; }
+    },
+    onLeave(retval) {
+        if (this.s1 !== null) retval.replace(0);  // 0 = strings match
+    }
+});</code></pre>
+<h3>ex04_bypass_license.js - Force validation to return true</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;check_license&quot;), {
+    onLeave(retval) {
+        retval.replace(1);  // 1 = valid license
+    }
+});</code></pre>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Complete Example Scripts (cont.)</h2>
+<h3>modify_score.js - Multiply points via argument rewrite</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;update_score&quot;), {
+    onEnter(args) {
+        var points = args[1].toInt32();
+        args[1] = ptr(points * 100);  // 100x score multiplier
+    }
+});</code></pre>
+<p>Same pattern every time: <strong>hook, inspect, replace</strong>.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Script Development Workflow</h2>
+<ol><li><strong>Write</strong> <code>script.js</code> in your editor</li><li><strong>Run</strong>: <code>frida -f ./target -l script.js --no-pause</code></li><li><strong>Observe</strong> output, tweak, <strong>Ctrl+C</strong>, re-run</li><li><strong>Hot reload</strong> (no restart): type <code>%reload</code> in the Frida REPL</li></ol>
+<p><strong>Debug liberally</strong> with <code>console.log</code> and <code>hexdump</code>:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>console.log(&quot;[DEBUG] args[0] =&quot;, args[0]);
+console.log(&quot;[DEBUG] hex dump:\n&quot; + hexdump(args[0], {length: 32}));</code></pre>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Common Patterns</h2>
+<h3>Reusable hook helper</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>function hookExport(name, onEnterFn) {
+    var addr = Module.getGlobalExportByName(name);
+    if (addr) Interceptor.attach(addr, { onEnter: onEnterFn });
+}
+
+hookExport(&quot;strcmp&quot;, function(args) {
+    console.log(&quot;strcmp:&quot;, args[0].readUtf8String(), &quot;vs&quot;, args[1].readUtf8String());
+});</code></pre>
+<h3>Conditional bypass</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>function conditionalBypass(funcName, condition, forceRetval) {
+    Interceptor.attach(Module.getGlobalExportByName(funcName), {
+        onEnter(args) { this.shouldBypass = condition(args); },
+        onLeave(retval) {
+            if (this.shouldBypass) retval.replace(forceRetval);
+        }
+    });
+}
+
+conditionalBypass(&quot;strcmp&quot;,
+    (args) =&gt; { try { return args[1].readUtf8String().includes(&quot;S3cr3t&quot;); } catch(e) { return false; } },
+    0  // strcmp returns 0 for match
+);</code></pre>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Exercise: Bypass the License Checker (15 min)</h2>
+<p><strong>Target:</strong> <code>exercises/bin/ex04_license_check</code> <strong>Goal:</strong> Write a Frida script that makes the license checker accept any key.</p>
+<p><strong>Techniques to use:</strong></p>
+<ul><li><code>Interceptor.attach</code> with <code>onLeave</code> → <code>retval.replace()</code></li><li>Hooking validation functions by export name</li><li>Tracing with <code>frida-trace</code> to find the right function</li></ul>
+<p>See <strong><code>exercises/ex04-frida-bypass.md</code></strong> for full instructions and solution.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Exercise: Modify Game Scores (10 min)</h2>
+<p><strong>Target:</strong> <code>exercises/bin/ex05_game_score</code> <strong>Goal:</strong> Cheat the scoring system - multiply points, hook <code>rand()</code>, or write directly to memory.</p>
+<p><strong>Techniques to use:</strong></p>
+<ul><li>Argument modification in <code>onEnter</code></li><li><code>NativeFunction</code> to call scoring functions directly</li><li><code>retval.replace()</code> on <code>rand()</code> for predictable outcomes</li></ul>
+<p>See <strong><code>exercises/ex05-frida-game-hack.md</code></strong> for full instructions and solution.</p>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Common Pitfalls and Debugging</h2>
+<h3>Memory safety</h3>
+<ul><li><strong>Dangling pointers</strong>: Copy data in <code>onEnter</code>, don't read stale pointers in <code>onLeave</code> ```javascript onEnter(args) { this.path = args[0].readUtf8String(); }  // copy now onLeave(retval) { console.log(this.path); }               // safe ```</li><li><strong>GC of Memory.alloc</strong>: Keep a global reference if native code stores the pointer ```javascript var keepAlive = [];  // prevent garbage collection var buf = Memory.allocUtf8String("fake"); keepAlive.push(buf); ```</li></ul>
+<h3>Debugging hooks</h3>
+<ul><li><strong>Catch crashes</strong>: <code>Process.setExceptionHandler(details =&gt; { console.log(JSON.stringify(details)); return false; });</code></li><li><strong>Guard pointer reads</strong>: Wrap <code>readUtf8String()</code> in <code>try/catch</code> - not all <code>args[0]</code> are valid strings</li><li><strong>hexdump() for raw data</strong>: <code>console.log(hexdump(args[0], { length: 64 }));</code></li></ul>
+<h3>Performance</h3>
+<ul><li>Avoid hooking <code>malloc</code>/<code>free</code>/<code>memcpy</code> with JavaScript - use CModule (Module 8)</li><li>Buffer <code>send()</code> messages - each one is a cross-process IPC call</li><li><code>Module.getGlobalExportByName()</code> is expensive - cache the result in a variable</li></ul>
+<h3>ASLR</h3>
+<ul><li><strong>Never hardcode addresses</strong> from a disassembler - use <code>Process.findModuleByName(&quot;target&quot;).base.add(offset)</code></li></ul>
+            </section>
+
+            <section data-module="07-frida-scripting">
+                <h2>Recap</h2>
+<table>
+<thead><tr>
+<th>Concept</th>
+<th>What It Does</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>frida -l script.js</code></td>
+<td>Load a hook script from a file</td>
+</tr>
+<tr>
+<td><code>retval.replace(val)</code></td>
+<td>Change a function's return value</td>
+</tr>
+<tr>
+<td><code>this.x</code> in onEnter/onLeave</td>
+<td>Share data between entry and exit hooks</td>
+</tr>
+<tr>
+<td><code>Memory.allocUtf8String()</code></td>
+<td>Create new strings in target memory</td>
+</tr>
+<tr>
+<td><code>hexdump()</code> / <code>Memory.scanSync()</code></td>
+<td>Inspect and search target memory</td>
+</tr>
+<tr>
+<td><code>new NativeFunction()</code></td>
+<td>Call any native function from JavaScript</td>
+</tr>
+<tr>
+<td><code>Interceptor.replace()</code></td>
+<td>Completely replace a function</td>
+</tr>
+<tr>
+<td><code>send()</code> / <code>on(&#x27;message&#x27;)</code></td>
+<td>Communicate with a Python host script</td>
+</tr>
+<tr>
+<td><code>Thread.backtrace()</code></td>
+<td>See who called the current function</td>
+</tr>
+</tbody>
+</table>
+<h3>Next up: Advanced techniques - stripped binaries, Stalker tracing, Python automation.</h3>
+            </section>
+
+            <section class="module-title" data-module="08-frida-advanced">
+                <h1>Advanced Frida</h1>
+<h2>And Where to Go Next</h2>
+<h3>Beyond the basics - real-world techniques</h3>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>The Problem: Stripped Binaries</h2>
+<p>So far we have hooked <strong>exported functions</strong> by name:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Module.getGlobalExportByName(&quot;strcmp&quot;)  // Works for libc exports</code></pre>
+<p>But what about:</p>
+<ul><li><strong>Stripped binaries</strong> (compiled with <code>strip</code> - symbol names removed) - no symbol names at all</li><li><strong>Static functions</strong> - not exported, invisible to <code>findExportByName</code></li><li><strong>Inlined functions</strong> - compiled directly into the caller</li><li><strong>Obfuscated code</strong> - symbols deliberately removed or mangled</li></ul>
+<p>For these cases, we need to hook <strong>by address</strong>.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Hooking by Address</h2>
+<p>Every function lives at a memory address. If you know the <strong>offset</strong> from the binary's base address, you can hook it directly:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Find where the binary is loaded in memory
+const base = Process.findModuleByName(&quot;target&quot;).base;
+console.log(&quot;[*] Base address:&quot;, base);
+
+// Hook the function at offset 0x1234 from the base
+Interceptor.attach(base.add(0x1234), {
+    onEnter(args) {
+        console.log(&quot;[*] Function at offset 0x1234 called&quot;);
+        console.log(&quot;    arg0:&quot;, args[0]);
+        console.log(&quot;    arg1:&quot;, args[1].toInt32());
+    },
+    onLeave(retval) {
+        console.log(&quot;    returned:&quot;, retval.toInt32());
+    }
+});</code></pre>
+<p>The offset <code>0x1234</code> comes from <strong>static analysis</strong> - your disassembler.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Finding Offsets: The Static + Dynamic Workflow</h2>
+<h3>Step 1: Static analysis - find the offset</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># With objdump
+objdump -d ./target | grep -A5 &quot;check_password&quot;
+# 0000000000001234 &lt;check_password&gt;:
+#     1234:  55              push   %rbp
+#     1235:  48 89 e5        mov    %rsp,%rbp
+
+# With readelf
+readelf -s ./target | grep check
+# 42: 0000000000001234  48 FUNC LOCAL DEFAULT 14 check_password
+
+# With nm
+nm ./target | grep check
+# 0000000000001234 t check_password</code></pre>
+<p>The offset is <code>0x1234</code> - the address in the <strong>file</strong> (before loading).</p>
+<h3>Step 2: Dynamic hooking - use the offset with Frida</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>const base = Process.findModuleByName(&quot;target&quot;).base;
+Interceptor.attach(base.add(0x1234), { ... });</code></pre>
+<p>Frida handles ASLR automatically. <code>base.add(offset)</code> always resolves correctly.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Finding Offsets: Using Ghidra</h2>
+<p>Ghidra (free, from NSA) decompiles binaries into C-like pseudocode and shows function addresses.</p>
+<ol><li>Open the binary in Ghidra</li><li>Let the auto-analyzer run</li><li>Navigate the function list or search for interesting strings</li><li>Find the function you want to hook</li><li>Note the address - Ghidra shows the <strong>file offset</strong></li></ol>
+<pre><code class="nohighlight" data-trim data-noescape>                     check_password
+  001011a4  55           PUSH    RBP
+  001011a5  48 89 e5     MOV     RBP,RSP
+  001011a8  48 83 ec 10  SUB     RSP,0x10
+  ...</code></pre>
+<p>In Ghidra, the default base is often <code>0x00100000</code>, so the real offset is:</p>
+<pre><code class="nohighlight" data-trim data-noescape>0x001011a4 - 0x00100000 = 0x11a4</code></pre>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>const base = Process.findModuleByName(&quot;target&quot;).base;
+Interceptor.attach(base.add(0x11a4), { ... });</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Practical Example: Hooking a Stripped Binary</h2>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Strip all symbols from our binary
+strip --strip-all ./target
+
+# Verify: no symbols left
+nm ./target
+# nm: ./target: no symbols
+
+# Find functions by analyzing the disassembly
+objdump -d ./target | less
+# Look for function prologues: push rbp; mov rsp, rbp</code></pre>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Hook the stripped binary by offset
+const base = Process.findModuleByName(&quot;target&quot;).base;
+
+// We found these offsets from our disassembly analysis
+const checkPassword = base.add(0x11a4);  // The password check
+const mainFunc = base.add(0x1220);       // main()
+
+Interceptor.attach(checkPassword, {
+    onEnter(args) {
+        console.log(&quot;[*] Password check called!&quot;);
+        console.log(&quot;    Input:&quot;, args[0].readUtf8String());
+    },
+    onLeave(retval) {
+        console.log(&quot;    Result:&quot;, retval.toInt32());
+        retval.replace(1);  // Force success
+    }
+});</code></pre>
+<p>See <strong><code>exercises/ex07-stripped-hooking.md</code></strong> - hook a stripped binary by address.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Enumerating Functions by Pattern</h2>
+<p>When you do not know exact offsets, scan for function prologues:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Find all functions in the main binary by scanning for
+// common x86_64 function prologues
+const mod = Process.enumerateModules()[0];  // Main binary
+
+var matches = Memory.scanSync(mod.base, mod.size,
+    &quot;55 48 89 e5&quot;  // push rbp; mov rbp, rsp
+);
+
+for (var i = 0; i &lt; matches.length; i++) {
+    console.log(&quot;[*] Possible function at:&quot;, matches[i].address,
+                &quot;offset:&quot;, matches[i].address.sub(mod.base));
+}
+console.log(&quot;[*] Scan complete -&quot;, matches.length, &quot;matches found&quot;);</code></pre>
+<p>This is a rough heuristic - not every match is a real function, and not every function starts with this prologue. But it is a useful starting point.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Stalker: Frida's Code Tracing Engine</h2>
+<p><strong>Stalker</strong> is Frida's instruction-level tracing engine. It can trace every single instruction, call, or block executed.</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Follow the current thread and log all CALL instructions
+Stalker.follow(Process.getCurrentThreadId(), {
+    events: {
+        call: true,    // Log CALL instructions
+        ret: false,    // Skip RET instructions
+        exec: false,   // Skip every executed instruction (noisy!)
+        block: false   // Skip basic block entries
+    },
+
+    onReceive(events) {
+        // events is a binary blob - parse it
+        var parsed = Stalker.parse(events);
+        parsed.forEach(function(event) {
+            console.log(&quot;CALL from&quot;, event[1], &quot;to&quot;, event[2]);
+        });
+    }
+});
+
+// Stop tracing after 5 seconds
+setTimeout(function() {
+    Stalker.unfollow(Process.getCurrentThreadId());
+    console.log(&quot;[*] Stalker stopped&quot;);
+}, 5000);</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Stalker: Frida's Code Tracing Engine (cont.)</h2>
+<h3>Call Summary - a more practical approach</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Stalker.follow(Process.getCurrentThreadId(), {
+    events: { call: true },
+    onCallSummary(summary) {
+        Object.keys(summary).forEach(function(addr) {
+            var sym = DebugSymbol.fromAddress(ptr(addr));
+            if (summary[addr] &gt; 1)
+                console.log(`  ${sym} called ${summary[addr]} times`);
+        });
+    }
+});</code></pre>
+<p>Use cases: <strong>code coverage</strong>, <strong>function discovery</strong>, <strong>performance profiling</strong>. <strong>Warning:</strong> Stalker is powerful but slow. Use it selectively.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Stalker: The Transform Callback</h2>
+<p>Stalker's most powerful feature is <code>transform</code> - rewrite instructions as they execute:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Code coverage: record which basic blocks execute
+const coverage = new Set();
+const mod = Process.findModuleByName(&quot;target&quot;);
+
+Stalker.follow(Process.getCurrentThreadId(), {
+    transform(iterator) {
+        const first = iterator.next();
+        const addr = first.address;
+
+        // Only instrument our target module
+        if (addr.compare(mod.base) &gt;= 0 &amp;&amp;
+            addr.compare(mod.base.add(mod.size)) &lt; 0) {
+            const offset = addr.sub(mod.base).toInt32();
+            iterator.putCallout(() =&gt; { coverage.add(offset); });
+        }
+
+        do { iterator.keep(); }
+        while (iterator.next() !== null);
+    }
+});</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Stalker: The Transform Callback (cont.)</h2>
+<h3>Key Stalker APIs</h3>
+<table>
+<thead><tr>
+<th>API</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>transform(iterator)</code></td>
+<td>Rewrite basic blocks at compile time</td>
+</tr>
+<tr>
+<td><code>iterator.putCallout(fn)</code></td>
+<td>Insert JS callback at current instruction</td>
+</tr>
+<tr>
+<td><code>Stalker.addCallProbe(addr, fn)</code></td>
+<td>Lightweight: fire callback when addr is called</td>
+</tr>
+<tr>
+<td><code>Stalker.flush()</code></td>
+<td>Force delivery of buffered events</td>
+</tr>
+<tr>
+<td><code>Stalker.garbageCollect()</code></td>
+<td>Free stale recompiled code blocks</td>
+</tr>
+<tr>
+<td><code>Stalker.trustThreshold</code></td>
+<td><code>-1</code> = never retransform (faster for static code)</td>
+</tr>
+</tbody>
+</table>
+<h3>Performance tips</h3>
+<ul><li><strong>Filter by module</strong> in <code>transform</code> - skip libc/ld-linux blocks</li><li>Use <code>compile</code> events (once per block) instead of <code>exec</code> (every instruction)</li><li>Prefer <code>onCallSummary</code> over individual <code>call</code> events for counting</li><li>Scope stalking: <code>follow</code>/<code>unfollow</code> only around the function of interest</li></ul>
+<h3>Exporting coverage for visualization</h3>
+<ul><li><strong>frida-drcov.py</strong> outputs DynamoRIO DRCOV format from Stalker</li><li>Load into <strong>Lighthouse</strong> (IDA) or <strong>Dragondance</strong> (Ghidra) for visual coverage maps</li><li>Workflow: <code>python frida-drcov.py -o coverage.log ./target</code> then open in IDA/Ghidra</li></ul>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Frida-Based Fuzzing</h2>
+<p>Stalker's coverage data can feed <strong>AFL++</strong> for coverage-guided fuzzing of closed-source binaries.</p>
+<h3>fpicker (github.com/ttdennis/fpicker)</h3>
+<ul><li>AFL++ proxy mode: Frida/Stalker populates AFL's coverage bitmap</li><li>Standalone mode: built-in mutations with Stalker call summaries</li><li>Harness is a JS class with a <code>fuzz(payload)</code> method</li></ul>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// fpicker harness pattern
+class MyFuzzer extends Fuzzer.Fuzzer {
+    fuzz(payload) {
+        var buf = Memory.alloc(payload.byteLength);
+        Memory.writeByteArray(buf, payload);
+        targetFunc(buf, payload.byteLength);  // call target with fuzzed input
+    }
+}
+var f = new MyFuzzer(&quot;/path/to/corpus&quot;);
+f.start();</code></pre>
+<p>Other tools: <strong>frizzer</strong> (network service fuzzing), <strong>hotwax</strong> (Stalker-based)</p>
+<p>Frida enables <strong>blackbox fuzzing</strong> of any binary on any platform - no source code needed.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Python Bindings: Full Automation</h2>
+<p>For production tooling, use Frida's <strong>Python bindings</strong>:</p>
+<pre data-lang="python"><code class="language-python" data-trim data-noescape>#!/usr/bin/env python3
+import frida
+import sys
+
+js_code = &quot;&quot;&quot;
+Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        send({
+            s1: args[0].readUtf8String(),
+            s2: args[1].readUtf8String()
+        });
+    }
+});
+&quot;&quot;&quot;</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Python Bindings: Full Automation (cont.)</h2>
+<pre data-lang="python"><code class="language-python" data-trim data-noescape>def on_message(message, data):
+    if message[&#x27;type&#x27;] == &#x27;send&#x27;:
+        payload = message[&#x27;payload&#x27;]
+        print(f&quot;[*] strcmp: \&quot;{payload[&#x27;s1&#x27;]}\&quot; vs \&quot;{payload[&#x27;s2&#x27;]}\&quot;&quot;)
+    elif message[&#x27;type&#x27;] == &#x27;error&#x27;:
+        print(f&quot;[!] Error: {message[&#x27;stack&#x27;]}&quot;)
+
+# Spawn the target process
+pid = frida.spawn([&quot;./target&quot;])
+session = frida.attach(pid)
+
+# Load and run the script
+script = session.create_script(js_code)
+script.on(&#x27;message&#x27;, on_message)
+script.load()
+
+# Resume the process (it was spawned paused)
+frida.resume(pid)
+
+print(&quot;[*] Running. Press Ctrl+C to stop.&quot;)
+sys.stdin.read()</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Python Bindings: Full Automation (cont.)</h2>
+<h3>When to use Python bindings vs. the CLI</h3>
+<table>
+<thead><tr>
+<th>Feature</th>
+<th>REPL / CLI</th>
+<th>Python Bindings</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Quick experiments</td>
+<td>Best choice</td>
+<td>Overkill</td>
+</tr>
+<tr>
+<td>Automated testing</td>
+<td>Awkward</td>
+<td>Natural</td>
+</tr>
+<tr>
+<td>Processing results</td>
+<td>Limited</td>
+<td>Full Python ecosystem</td>
+</tr>
+<tr>
+<td>Multi-process orchestration</td>
+<td>Difficult</td>
+<td>Easy</td>
+</tr>
+<tr>
+<td>CI/CD integration</td>
+<td>Hacky</td>
+<td>Clean</td>
+</tr>
+</tbody>
+</table>
+<p>Key APIs: <code>frida.spawn()</code> / <code>frida.attach()</code>, <code>session.create_script()</code>, <code>script.on(&#x27;message&#x27;, callback)</code></p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Python Bindings: Full Automation (cont.)</h2>
+<h3>Spawn gating (instrumenting child processes)</h3>
+<pre data-lang="python"><code class="language-python" data-trim data-noescape>device.enable_spawn_gating()
+device.on(&#x27;spawn-added&#x27;, lambda spawn: instrument_child(spawn.pid))</code></pre>
+<p>Essential for multiprocess daemons and fork-based services.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Python Bindings: Advanced Orchestration</h2>
+<pre data-lang="python"><code class="language-python" data-trim data-noescape>#!/usr/bin/env python3
+&quot;&quot;&quot;Automated password brute-forcer using Frida.&quot;&quot;&quot;
+
+import frida
+import subprocess
+
+js_code = &quot;&quot;&quot;
+var found = false;
+Interceptor.attach(Module.getGlobalExportByName(&quot;strcmp&quot;), {
+    onEnter(args) {
+        try {
+            var s1 = args[0].readUtf8String();
+            var s2 = args[1].readUtf8String();
+            if (s2.length &gt; 3) {
+                send({type: &quot;password&quot;, value: s2});
+                found = true;
+            }
+        } catch(e) {}
+    }
+});
+&quot;&quot;&quot;</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Python Bindings: Advanced Orchestration (cont.)</h2>
+<pre data-lang="python"><code class="language-python" data-trim data-noescape>def on_message(message, data):
+    if message[&#x27;type&#x27;] == &#x27;send&#x27;:
+        payload = message[&#x27;payload&#x27;]
+        if payload[&#x27;type&#x27;] == &#x27;password&#x27;:
+            print(f&quot;\n[!] PASSWORD FOUND: {payload[&#x27;value&#x27;]}&quot;)
+
+pid = frida.spawn([&quot;exercises/bin/ex01_password_check&quot;],
+                   stdio=&#x27;pipe&#x27;)
+session = frida.attach(pid)
+script = session.create_script(js_code)
+script.on(&#x27;message&#x27;, on_message)
+script.load()
+frida.resume(pid)
+
+# Feed input to the process
+device = frida.get_local_device()
+device.input(pid, b&quot;test\n&quot;)
+
+import time; time.sleep(2)
+session.detach()</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>r2frida: The Best of Both Worlds</h2>
+<p><strong>r2frida</strong> combines radare2's static analysis with Frida's dynamic capabilities:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Install r2frida
+r2pm -ci r2frida
+
+# Attach to a process with r2frida
+r2 frida://./target</code></pre>
+<p>Inside the r2frida session:</p>
+<pre><code class="nohighlight" data-trim data-noescape># List modules
+\il
+
+# List exports of a module
+\iE libc.so.6
+
+# Search for strings in memory
+\/ password
+
+# Disassemble at an address
+pd 20 @ sym.check_password
+
+# Run Frida JavaScript directly
+\. script.js
+
+# Intercept a function
+\di0 strcmp    # Hook strcmp and print args</code></pre>
+<p>r2frida lets you do static analysis and dynamic hooking in a <strong>single session</strong>.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Anti-Instrumentation: How Targets Fight Back</h2>
+<p>Sophisticated software may try to detect or prevent instrumentation:</p>
+<h3>ptrace-based detection</h3>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// If ptrace is already attached (by a debugger), this fails
+if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1) {
+    printf(&quot;Debugger detected!\n&quot;);
+    exit(1);
+}</code></pre>
+<h3>Self-integrity checks</h3>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// Hash the .text section and compare with expected value
+// Frida&#x27;s hooks modify the code, changing the hash
+unsigned char hash[32];
+sha256(code_start, code_size, hash);
+if (memcmp(hash, expected_hash, 32) != 0) {
+    exit(1);  // Code was modified!
+}</code></pre>
+<h3>Timing checks</h3>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// Instrumented code runs slower
+struct timespec start, end;
+clock_gettime(CLOCK_MONOTONIC, &amp;start);
+do_sensitive_operation();
+clock_gettime(CLOCK_MONOTONIC, &amp;end);
+if (elapsed_ms(start, end) &gt; 100) {
+    exit(1);  // Too slow - probably instrumented
+}</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Bypassing Anti-Instrumentation</h2>
+<p>Frida can counter each technique:</p>
+<h3>Bypass ptrace detection</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;ptrace&quot;), {
+    onEnter(args) {
+        console.log(&quot;[*] ptrace called - blocking&quot;);
+    },
+    onLeave(retval) {
+        retval.replace(0);  // Pretend it succeeded
+    }
+});</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Bypassing Anti-Instrumentation (cont.)</h2>
+<h3>Bypass integrity checks</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Hook the hash comparison to always return &quot;match&quot;
+Interceptor.attach(Module.getGlobalExportByName(&quot;memcmp&quot;), {
+    onEnter(args) {
+        // You may want to be selective here
+        this.isIntegrityCheck = args[2].toInt32() === 32; // SHA-256 size
+    },
+    onLeave(retval) {
+        if (this.isIntegrityCheck) {
+            retval.replace(0);  // 0 = match
+        }
+    }
+});</code></pre>
+<h3>Bypass timing checks</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Hook clock_gettime to return consistent values
+Interceptor.attach(Module.getGlobalExportByName(&quot;clock_gettime&quot;), {
+    onLeave(retval) {
+        // Make time appear to pass very quickly
+    }
+});</code></pre>
+<p>See <strong><code>exercises/ex06-anti-debug-bypass.md</code></strong> for a quick ptrace bypass, and <strong><code>exercises/ex08-advanced-bypass.md</code></strong> for a full anti-debug bypass script.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>A Note on Frida's Stealth</h2>
+<p>Frida is relatively stealthy compared to traditional debuggers:</p>
+<ul><li><strong>No <em>persistent</em> ptrace attachment</strong> - Frida uses ptrace briefly to inject its agent, then releases it (unlike gdb, which holds ptrace for the whole session)</li><li><strong>Process name</strong> - Frida's agent runs as a thread inside the target</li><li><strong>Memory artifacts</strong> - <code>frida-agent.so</code> is mapped in <code>/proc/PID/maps</code></li></ul>
+<h3>Detection vectors against Frida on Linux</h3>
+<table>
+<thead><tr>
+<th>Vector</th>
+<th>Method</th>
+<th>Bypass</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Library scanning</td>
+<td><code>/proc/self/maps</code> for <code>frida-agent</code></td>
+<td>Hook <code>open</code>/<code>read</code> to filter output</td>
+</tr>
+<tr>
+<td>Thread names</td>
+<td><code>/proc/self/task/*/comm</code> for <code>gmain</code>, <code>gum-js-loop</code></td>
+<td>Rename threads via <code>prctl</code> hook</td>
+</tr>
+<tr>
+<td>Named pipes</td>
+<td><code>/proc/self/fd/</code> for <code>linjector</code> pipes</td>
+<td>Patched Frida builds</td>
+</tr>
+<tr>
+<td>Port scanning</td>
+<td>Connect to localhost:27042</td>
+<td><code>frida-server -l 0.0.0.0:CUSTOM_PORT</code></td>
+</tr>
+<tr>
+<td>Env variables</td>
+<td><code>FRIDA_*</code> in <code>/proc/self/environ</code></td>
+<td>Clean environment before spawning</td>
+</tr>
+<tr>
+<td>Memory strings</td>
+<td>Scan for <code>&quot;LIBFRIDA&quot;</code>, <code>&quot;GumJS&quot;</code></td>
+<td>Build Frida from source with patched strings</td>
+</tr>
+<tr>
+<td>Code integrity</td>
+<td>Checksum function prologues</td>
+<td>Use Stalker instead (no inline patching)</td>
+</tr>
+<tr>
+<td>Raw syscalls</td>
+<td>Direct <code>SYS_openat</code> bypassing libc hooks</td>
+<td>Stalker-level syscall interception</td>
+</tr>
+</tbody>
+</table>
+<p>The arms race continues - each detection can be bypassed, but raw syscalls and code integrity checks are the hardest to defeat.</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Example: hide frida-agent from /proc/self/maps reads
+Interceptor.attach(Module.getGlobalExportByName(&quot;open&quot;), {
+    onEnter(args) {
+        var path = args[0].readUtf8String();
+        if (path.includes(&quot;/proc/self/maps&quot;)) {
+            console.log(&quot;[!] Process is reading /proc/self/maps&quot;);
+            // Could redirect to a filtered copy
+        }
+    }
+});</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Real-World Applications: Network Analysis</h2>
+<h3>Malware Analysis - map C2 infrastructure</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;connect&quot;), {
+    onEnter(args) {
+        var sockaddr = args[1];
+        var family = sockaddr.readU16();
+        if (family === 2) {  // AF_INET
+            var port = (sockaddr.add(2).readU8() &lt;&lt; 8) |
+                        sockaddr.add(3).readU8();
+            var ip = [4,5,6,7].map(i =&gt; sockaddr.add(i).readU8()).join(&#x27;.&#x27;);
+            console.log(`[*] connect -&gt; ${ip}:${port}`);
+        }
+    }
+});</code></pre>
+<h3>Protocol RE - watch raw bytes on the wire</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;send&quot;), {
+    onEnter(args) {
+        console.log(&quot;[SEND]&quot;, args[2].toInt32(), &quot;bytes:&quot;);
+        console.log(hexdump(args[1], { length: Math.min(args[2].toInt32(), 256) }));
+    }
+});</code></pre>
+<p>Hook network calls in a VM to map C2 servers or decode proprietary protocols.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Real-World Applications: Security and Modding</h2>
+<h3>Security Auditing - monitor dangerous calls</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>[&quot;system&quot;, &quot;exec&quot;, &quot;popen&quot;, &quot;dlopen&quot;].forEach(function(name) {
+    var addr = Module.getGlobalExportByName(name);
+    if (addr) {
+        Interceptor.attach(addr, {
+            onEnter(args) {
+                console.log(`[AUDIT] ${name}():`, args[0].readUtf8String());
+                console.log(&quot;  &quot; + Thread.backtrace(this.context,
+                    Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join(&quot;\n  &quot;));
+            }
+        });
+    }
+});</code></pre>
+<h3>Game Hacking - modify runtime behavior</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>const takeDamage = Process.findModuleByName(&quot;game_binary&quot;).base.add(0x2a1c);
+Interceptor.attach(takeDamage, {
+    onEnter(args) {
+        console.log(`[*] take_damage(${args[1].toInt32()}) - nullified`);
+        args[1] = ptr(0);
+    }
+});</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Network Interception & Crypto Hooking</h2>
+<h3>TLS traffic decryption - hook below the encryption layer</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>Interceptor.attach(Module.getGlobalExportByName(&quot;SSL_write&quot;), {
+    onEnter(args) {
+        var len = args[2].toInt32();
+        console.log(&quot;[SSL_write]&quot;, len, &quot;bytes:&quot;);
+        console.log(hexdump(args[1], { length: Math.min(len, 128) }));
+    }
+});
+// Hook SSL_read&#x27;s onLeave to see received plaintext</code></pre>
+<h3>Tools</h3>
+<ul><li><strong>friTap</strong> (<code>pip install fritap</code>) - TLS key extraction for OpenSSL, BoringSSL, GnuTLS, WolfSSL, NSS, mbedTLS. Outputs PCAP + keylog files</li><li><strong>frida-interception-and-unpinning</strong> - rewrite apps for HTTPS MitM</li></ul>
+<h3>Crypto key extraction</h3>
+<p>Hook <code>EVP_EncryptInit_ex</code> to capture keys/IVs, <code>EVP_EncryptUpdate</code> to see plaintext.</p>
+<p>Quick discovery: <code>frida-trace -i &quot;&lt;em&gt;crypt&lt;/em&gt;&quot; -i &quot;&lt;em&gt;cipher&lt;/em&gt;&quot; -i &quot;&lt;em&gt;SSL&lt;/em&gt;&quot; ./target</code></p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>CModule: Native Performance Hooks</h2>
+<p>For <strong>hot functions</strong> (malloc, free, tight loops), JavaScript hooks add too much overhead. CModule lets you write C code that compiles and runs at <strong>native speed</strong>:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>const cm = new CModule(`
+  #include &lt;gum/guminterceptor.h&gt;
+  #include &lt;stdio.h&gt;
+
+  static int call_count = 0;
+
+  void onEnter(GumInvocationContext * ic) {
+    call_count++;
+    if (call_count % 10000 == 0) {
+      printf(&quot;[*] malloc called %d times\\n&quot;, call_count);
+    }
+  }
+`);
+
+Interceptor.attach(Module.getGlobalExportByName(&quot;malloc&quot;), cm);</code></pre>
+<ul><li>~100x faster than JavaScript callbacks on hot paths</li><li>Full access to Gum C API (<code>gum/guminterceptor.h</code>, <code>gum/gumstalker.h</code>)</li><li>Mix with JS: pass <code>NativePointer</code> data between CModule and JavaScript</li><li>Trade-off: less convenient to write, no <code>console.log</code> (use <code>printf</code> instead)</li></ul>
+<p>Ideal for: <code>malloc</code>/<code>free</code> tracking (detect leaks, double-free, use-after-free), tight-loop instrumentation, and high-frequency syscall hooks. Use <code>Process.enumerateMallocRanges()</code> to scan the heap. See also <strong>fridump</strong> for full memory dumps.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Frida Gadget: No Server Required</h2>
+<p>Can't set <code>ptrace_scope=0</code>? No root? Use <strong>frida-gadget</strong> instead:</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># Method 1: LD_PRELOAD
+LD_PRELOAD=/path/to/frida-gadget.so ./target_binary
+
+# Method 2: Patch the binary permanently
+patchelf --add-needed frida-gadget.so ./target_binary</code></pre>
+<p>The gadget is a shared library that runs Frida <strong>inside</strong> the target process:</p>
+<table>
+<thead><tr>
+<th></th>
+<th>frida-server</th>
+<th>frida-gadget</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Requires root/ptrace</strong></td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Separate daemon</strong></td>
+<td>Yes (<code>frida-server</code>)</td>
+<td>No (loads in-process)</td>
+</tr>
+<tr>
+<td><strong>Attach to any PID</strong></td>
+<td>Yes</td>
+<td>Only the gadget-loaded process</td>
+</tr>
+<tr>
+<td><strong>Setup</strong></td>
+<td>Install + run server</td>
+<td>Drop <code>.so</code> + configure</td>
+</tr>
+</tbody>
+</table>
+<h3>Gadget configuration (<code>frida-gadget.config</code>):</h3>
+<pre data-lang="json"><code class="language-json" data-trim data-noescape>{
+  &quot;interaction&quot;: {
+    &quot;type&quot;: &quot;script&quot;,
+    &quot;path&quot;: &quot;./my_hooks.js&quot;
+  }
+}</code></pre>
+<p>Modes: <code>&quot;listen&quot;</code> (wait for client), <code>&quot;script&quot;</code> (auto-run), <code>&quot;script-directory&quot;</code> (load all scripts)</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Frida vs eBPF: When to Use Which</h2>
+<p>Both are dynamic analysis tools on Linux, but they serve <strong>different purposes</strong>:</p>
+<table>
+<thead><tr>
+<th></th>
+<th>Frida</th>
+<th>eBPF / bpftrace</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Primary use</strong></td>
+<td>Observe <strong>and modify</strong></td>
+<td>Observe only</td>
+</tr>
+<tr>
+<td><strong>Scope</strong></td>
+<td>Single process</td>
+<td>System-wide</td>
+</tr>
+<tr>
+<td><strong>Overhead</strong></td>
+<td>Moderate (2-10x for hooks)</td>
+<td>Very low (<5%)</td>
+</tr>
+<tr>
+<td><strong>Safety</strong></td>
+<td>Can crash target</td>
+<td>Kernel-verified, crash-proof</td>
+</tr>
+<tr>
+<td><strong>Granularity</strong></td>
+<td>Function args, return values, memory</td>
+<td>Tracepoints, kprobes, uprobes</td>
+</tr>
+<tr>
+<td><strong>Scripting</strong></td>
+<td>JavaScript (rich, interactive)</td>
+<td>Limited C-like DSL</td>
+</tr>
+<tr>
+<td><strong>Production</strong></td>
+<td>Development/research</td>
+<td>Production-safe monitoring</td>
+</tr>
+</tbody>
+</table>
+<h3>Rule of thumb:</h3>
+<ul><li><strong>Frida</strong> when you need to <strong>change behavior</strong>: bypass checks, modify returns, inject code</li><li><strong>eBPF</strong> when you need to <strong>observe at scale</strong>: system-wide tracing, performance monitoring</li><li><strong>Frida</strong> for reverse engineering closed-source binaries</li><li><strong>eBPF</strong> for debugging and profiling systems you operate</li></ul>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># eBPF: trace all open() calls system-wide (observe)
+bpftrace -e &#x27;tracepoint:syscalls:sys_enter_openat { printf(&quot;%s %s\n&quot;, comm, str(args.filename)); }&#x27;
+
+# Frida: hook open() in one process and change the path (modify)
+Interceptor.attach(Module.getGlobalExportByName(&quot;open&quot;), {
+    onEnter(args) { args[0] = Memory.allocUtf8String(&quot;/tmp/fake&quot;); }
+});</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Python + RPC Exports: Building Real Tools</h2>
+<p>The <code>rpc.exports</code> pattern is the recommended way to build Python+Frida tools:</p>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// agent.js - runs inside the target
+rpc.exports = {
+    getModules() {
+        return Process.enumerateModules().map(m =&gt; ({
+            name: m.name, base: m.base.toString(), size: m.size
+        }));
+    },
+    readString(addr) {
+        return ptr(addr).readUtf8String();
+    },
+    hookFunction(name) {
+        Interceptor.attach(Module.getGlobalExportByName(name), {
+            onEnter(args) { send({ func: name, arg0: args[0].toString() }); }
+        });
+        return &quot;Hooked &quot; + name;
+    }
+};</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Python + RPC Exports: Building Real Tools (cont.)</h2>
+<pre data-lang="python"><code class="language-python" data-trim data-noescape># host.py - orchestrates from Python
+import frida
+
+pid = frida.spawn([&quot;./target&quot;])
+session = frida.attach(pid)
+script = session.create_script(open(&quot;agent.js&quot;).read())
+script.on(&#x27;message&#x27;, lambda msg, data: print(msg[&#x27;payload&#x27;]))
+script.load()
+frida.resume(pid)
+
+# Call JS functions directly from Python!
+modules = script.exports_sync.get_modules()
+print(f&quot;Found {len(modules)} modules&quot;)
+
+result = script.exports_sync.hook_function(&quot;strcmp&quot;)
+print(result)  # &quot;Hooked strcmp&quot;</code></pre>
+<p>RPC exports are cleaner than <code>send()</code>/<code>recv()</code> for structured communication.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Loading and Calling Library Functions Directly</h2>
+<p>You don't always have a full program - sometimes you just have a <code>.so</code> and want to call its functions.</p>
+<h3>Create a minimal harness</h3>
+<pre data-lang="c"><code class="language-c" data-trim data-noescape>// harness.c - loads a library so Frida can interact with it
+#include &lt;dlfcn.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+int main(int argc, char *argv[]) {
+    void *h = dlopen(argv[1], RTLD_NOW);
+    if (!h) { fprintf(stderr, &quot;dlopen: %s\n&quot;, dlerror()); return 1; }
+    printf(&quot;[harness] Loaded %s (PID: %d)\n&quot;, argv[1], getpid());
+    pause();  // wait for Frida to attach
+    return 0;
+}</code></pre>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Loading and Calling Library Functions Directly (cont.)</h2>
+<h3>Call library functions from Frida</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>// Attach to harness, then call functions in the loaded library
+var mod = Process.getModuleByName(&quot;libcrypto_custom.so&quot;);
+
+var encrypt = new NativeFunction(
+    mod.getExportByName(&quot;encrypt_data&quot;),
+    &#x27;int&#x27;, [&#x27;pointer&#x27;, &#x27;int&#x27;, &#x27;pointer&#x27;]
+);
+
+var input = Memory.allocUtf8String(&quot;secret data&quot;);
+var output = Memory.alloc(256);
+var result = encrypt(input, 11, output);
+console.log(&quot;Encrypted:&quot;, hexdump(output, { length: 32 }));</code></pre>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>gcc -o harness harness.c -ldl
+frida -f ./harness -l call_lib.js -./libcrypto_custom.so</code></pre>
+<p>This pattern works for testing crypto libraries, fuzzing parsers, or analyzing plugins in isolation.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Hooking C++ Functions</h2>
+<p>C++ <strong>name mangling</strong> makes hooking harder - but not impossible.</p>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape># C function:   check_password     → symbol: check_password
+# C++ method:   Auth::check(std::string const&amp;)
+#               → symbol: _ZN4Auth5checkERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE</code></pre>
+<h3>Finding mangled names</h3>
+<pre data-lang="bash"><code class="language-bash" data-trim data-noescape>nm ./cpp_binary | grep -i check           # find raw mangled symbol
+nm --demangle ./cpp_binary | grep check   # see human-readable name</code></pre>
+<h3>Hooking by mangled name</h3>
+<pre data-lang="javascript"><code class="language-javascript" data-trim data-noescape>var mangled = &quot;_ZN4Auth5checkERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE&quot;;
+Interceptor.attach(Module.getGlobalExportByName(mangled), {
+    onEnter(args) {
+        // C++ member functions: args[0] = this, args[1..N] = real args
+        console.log(&quot;[*] Auth::check() called&quot;);
+        console.log(&quot;[*] this =&quot;, args[0]);
+        console.log(&quot;[*] input =&quot;, readStdString(args[1]));
+    },
+    onLeave(retval) {
+        retval.replace(1);  // bypass
+    }
+});</code></pre>
+<p><strong>Key rule:</strong> For non-static member functions, <code>args[0]</code> is always the <code>this</code> pointer. Real parameters start at <code>args[1]</code>.</p>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Limitations and Language Challenges</h2>
+<h3>C++ pitfalls</h3>
+<table>
+<thead><tr>
+<th>Challenge</th>
+<th>Problem</th>
+<th>Solution</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Name mangling</strong></td>
+<td>Symbols like <code>_ZN3Foo3barEi</code></td>
+<td><code>nm --demangle</code> to find, hook by mangled name</td>
+</tr>
+<tr>
+<td><strong><code>this</code> pointer</strong></td>
+<td>Hidden first argument</td>
+<td><code>args[0]</code> is <code>this</code>, real args at <code>args[1]+</code></td>
+</tr>
+<tr>
+<td><strong><code>std::string</code></strong></td>
+<td>Complex internal layout (SSO)</td>
+<td>Read with helper function</td>
+</tr>
+<tr>
+<td><strong>Virtual methods</strong></td>
+<td>Called via vtable, address varies</td>
+<td>Hook concrete implementation</td>
+</tr>
+<tr>
+<td><strong>Templates</strong></td>
+<td>Each instantiation has its own symbol</td>
+<td>Hook each specialization individually</td>
+</tr>
+</tbody>
+</table>
+<h3>Frida's blind spots</h3>
+<table>
+<thead><tr>
+<th>Target</th>
+<th>Workaround</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>Java (desktop JVM)</strong></td>
+<td>Hook JNI native methods, or use <code>-javaagent</code></td>
+</tr>
+<tr>
+<td><strong>Go / Rust binaries</strong></td>
+<td>Hook by address; <code>nm --demangle</code> for symbols</td>
+</tr>
+<tr>
+<td><strong>Statically linked</strong></td>
+<td>Hook by address; use <code>nm</code>/<code>objdump</code> for offsets</td>
+</tr>
+<tr>
+<td><strong>Kernel code</strong></td>
+<td>Use eBPF, kprobes, or SystemTap</td>
+</tr>
+<tr>
+<td><strong>JIT-compiled code</strong></td>
+<td>Stalker can trace, but hooking specific functions is hard</td>
+</tr>
+</tbody>
+</table>
+<h3>When Frida is the wrong tool:</h3>
+<ul><li><strong>System-wide monitoring</strong> → use eBPF/bpftrace</li><li><strong>Kernel debugging</strong> → use ftrace, kprobes, or crash/drgn</li><li><strong>Managed runtime introspection</strong> → use runtime-specific tools (jdb, dotnet-trace)</li><li><strong>Performance profiling</strong> → use perf, Valgrind, or eBPF</li></ul>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Resources for Continued Learning</h2>
+<h3>Official Resources</h3>
+<ul><li><strong>frida.re</strong> - Official documentation, API reference, tutorials</li><li><strong>Frida GitHub</strong> - Source code, issues, examples</li><li><strong>codeshare.frida.re</strong> - Community-contributed scripts (SSL pinning bypass, anti-root bypass, etc.)</li></ul>
+<h3>Practice Platforms</h3>
+<ul><li><strong>crackmes.one</strong> - Downloadable reverse engineering challenges</li><li><strong>FridaLab</strong> - 8 progressive Frida-specific challenges</li><li><strong>OverTheWire Behemoth</strong> - Linux binary exploitation wargame</li><li><strong>picoCTF</strong> - Beginner-friendly CTF with RE challenges</li></ul>
+<h3>Books and References</h3>
+<ul><li><strong>Practical Binary Analysis</strong> by Dennis Andriesse</li><li><strong>Learning Linux Binary Analysis</strong> by Ryan "elfmaster" O'Neill</li><li><strong>learnfrida.info</strong> - The Frida Handbook (free online)</li></ul>
+<h3>For Serious Tool Development</h3>
+<ul><li><strong>TypeScript agents</strong> - <code>npm install @types/frida-gum frida-compile</code> for type-safe scripts</li><li><strong>frida-agent-example</strong> - Official project template on GitHub (oleavr/frida-agent-example)</li></ul>
+<h3>Community</h3>
+<ul><li><strong>awesome-frida</strong> on GitHub - Curated list of Frida resources</li><li><strong>Frida Slack/Discord</strong> - Community support</li><li><strong>r/ReverseEngineering</strong> - Reddit community</li></ul>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Course Summary: The Progression</h2>
+<pre><code class="nohighlight" data-trim data-noescape>Level 1: Passive Observation
+  file, readelf, strings
+  &quot;What IS this binary?&quot;
+
+Level 2: Shallow Dynamic Analysis
+  ltrace, strace
+  &quot;What does it DO?&quot;
+
+Level 3: Static Analysis
+  objdump, Ghidra
+  &quot;HOW does it work?&quot;
+
+Level 4: Dynamic Instrumentation (Frida)
+  Interceptor.attach - observe
+  &quot;What happens at runtime?&quot;
+
+Level 5: Active Manipulation (Frida)
+  retval.replace, Interceptor.replace
+  &quot;What if it did something DIFFERENT?&quot;
+
+Level 6: Full Automation
+  Python + Frida scripts
+  &quot;Do it 10,000 times automatically&quot;</code></pre>
+<p>You started this course running <code>file</code> on a binary. You end it rewriting function return values at runtime.</p>
+<blockquote><p>Binary reverse engineering is not about memorizing tools.</p><p>It is about building a <strong>mental model</strong> of the target,</p><p>layer by layer, using whatever tool gives you the next insight.</p></blockquote>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Parting Advice</h2>
+<h3>The Complete Toolkit</h3>
+<table>
+<thead><tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><strong>file, readelf, nm</strong></td>
+<td>Basic binary identification</td>
+</tr>
+<tr>
+<td><strong>strings</strong></td>
+<td>Extract readable text</td>
+</tr>
+<tr>
+<td><strong>ltrace / strace</strong></td>
+<td>Trace library/system calls</td>
+</tr>
+<tr>
+<td><strong>objdump</strong></td>
+<td>Quick disassembly</td>
+</tr>
+<tr>
+<td><strong>Ghidra</strong></td>
+<td>Deep static analysis and decompilation</td>
+</tr>
+<tr>
+<td><strong>Frida</strong></td>
+<td>Dynamic instrumentation and hooking</td>
+</tr>
+<tr>
+<td><strong>r2frida / Python + Frida</strong></td>
+<td>Combined analysis and automation</td>
+</tr>
+</tbody>
+</table>
+<ul><li><strong>Start simple</strong> - <code>strings</code> and <code>ltrace</code> solve more problems than you would expect</li><li><strong>Combine static and dynamic</strong> - Ghidra tells you <strong>where</strong> to hook, Frida tells you <strong>what happens</strong></li><li><strong>Practice on CTFs</strong> - crackmes.one and picoCTF are excellent for building skills</li><li><strong>Build your own tools</strong> - the best way to learn Frida is to write scripts that solve real problems</li><li><strong>Share with your LUG</strong> - nothing solidifies knowledge like explaining it</li></ul>
+            </section>
+
+            <section data-module="08-frida-advanced">
+                <h2>Q&A</h2>
+<h3>Questions, demos, and live hacking</h3>
+<pre><code class="nohighlight" data-trim data-noescape>     ____
+    / _  |   Frida 17.x.x - A world-class dynamic instrumentation toolkit
+   | (_| |
+    &gt; _  |   Thank you for attending!
+   /_/ |_|
+   . . . .
+   . . . .   &quot;Any sufficiently advanced instrumentation is
+   . . . .    indistinguishable from magic.&quot;
+   . . . .</code></pre>
+<h3>Contact and resources:</h3>
+<ul><li>Course materials: <code>github.com/your-lug/frida-course</code></li><li>Frida docs: <code>frida.re</code></li><li>Practice: <code>crackmes.one</code></li></ul>
+            </section>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="presentation-footer">
+        Dynamic Instrumentation with Frida
+        <span class="separator">&middot;</span>
+        FHLUG
+    </div>
+
+    <!-- Reveal.js 5.x -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+
+    <!-- Plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/markdown/markdown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/search/search.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/zoom/zoom.js"></script>
+
+    <script>
+        Reveal.initialize({
+            // Display
+            width: 1280,
+            height: 720,
+            margin: 0.08,
+            center: true,
+
+            // Navigation
+            hash: true,
+            history: true,
+            keyboard: true,
+            overview: true,
+            touch: true,
+            loop: false,
+
+            // Appearance
+            transition: 'slide',
+            transitionSpeed: 'default',
+            backgroundTransition: 'fade',
+            progress: true,
+            slideNumber: true,
+            showNotes: false,
+
+            // Plugins
+            plugins: [
+                RevealMarkdown,
+                RevealHighlight,
+                RevealNotes,
+                RevealSearch,
+                RevealZoom
+            ]
+        });
+
+        // Hide footer on title slide
+        Reveal.on('slidechanged', event => {
+            const footer = document.getElementById('presentation-footer');
+            footer.style.opacity = (event.indexh === 0 && event.indexv === 0) ? '0' : '0.5';
+        });
+    </script>
+</body>
+</html>

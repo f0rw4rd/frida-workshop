@@ -97,7 +97,7 @@ Each phase feeds back into the others. RE is iterative, not linear.
 +-------------------+
 ```
 
-PLT/GOT are how your binary calls functions like `printf` or `strcmp` from libc. Frida hooks functions at this level.
+PLT/GOT are how your binary calls functions like `printf` or `strcmp` from libc. Understanding them helps you find the right place to hook - but Frida itself uses **inline hooking** (rewriting the function prologue), not GOT patching.
 
 ---
 
@@ -196,8 +196,7 @@ Code calls printf()
                           +---------------+
 ```
 
-**Why this matters for Frida:** We can intercept calls by hooking PLT entries
-or by replacing GOT pointers - Frida does this transparently for us.
+**Why this matters for Frida:** PLT/GOT explain *how* dynamic calls reach libc, but Frida does **not** patch the GOT. It resolves the target function (e.g. `strcmp` in libc) and hooks it **inline** by rewriting the function's prologue with a trampoline - so every caller is intercepted, not just ones going through this binary's GOT.
 
 ---
 

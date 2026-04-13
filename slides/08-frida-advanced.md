@@ -591,7 +591,7 @@ See **`exercises/ex06-anti-debug-bypass.md`** for a quick ptrace bypass, and **`
 
 Frida is relatively stealthy compared to traditional debuggers:
 
-- **No ptrace attachment** - Frida uses code injection, not ptrace
+- **No *persistent* ptrace attachment** - Frida uses ptrace briefly to inject its agent, then releases it (unlike gdb, which holds ptrace for the whole session)
 - **Process name** - Frida's agent runs as a thread inside the target
 - **Memory artifacts** - `frida-agent.so` is mapped in `/proc/PID/maps`
 
