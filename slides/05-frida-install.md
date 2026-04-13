@@ -18,7 +18,9 @@ It lets you:
 
 **Website:** https://frida.re | **Source:** https://github.com/frida/frida | **License:** wxWindows (permissive)
 
-### Supported platforms
+---
+
+## Frida: Supported Platforms
 
 | Platform | Use case |
 |---|---|
